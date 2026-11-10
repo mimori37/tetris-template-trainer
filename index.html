@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="ja">
+<html lang="ja" data-theme="light">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta name="color-scheme" content="dark" />
+<meta name="color-scheme" content="light dark" />
 <link rel="icon" href="data:," />
 <title>テトリス テンプレ積みトレーナー</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -18,7 +18,14 @@
     <p class="sub">ガイドライン準拠の本体＋開幕テンプレの反復練習＋スキル診断</p>
   </div>
   <button class="soundBtn" id="soundBtn" type="button">サウンド：OFF</button>
+  <button class="soundBtn" id="themeBtn" type="button">テーマ：ライト</button>
 </header>
+
+<nav class="views" role="tablist" aria-label="画面切り替え">
+  <button type="button" data-view="play" class="active">プレイ</button>
+  <button type="button" data-view="roadmap">テンプレ図鑑</button>
+  <button type="button" data-view="settings">設定</button>
+</nav>
 
 <nav class="modes" role="tablist" aria-label="モード選択">
   <button type="button" data-mode="free" class="active">フリープレイ</button>
@@ -26,12 +33,12 @@
   <button type="button" data-mode="skill">スキルチェック</button>
 </nav>
 
-<main class="layout">
+<main class="layout" id="viewPlay">
   <!-- left: templates / mode info -->
   <aside>
     <div class="panel" id="tplPanel">
-      <h2>開幕テンプレ体系 <span class="r">1巡目＝7ピース</span></h2>
-      <div id="tplList"></div>
+      <h2>課題テンプレ <span class="r">詳しくは「テンプレ図鑑」</span></h2>
+      <div id="tplChips"></div>
       <div class="tplDesc" id="tplDesc"></div>
     </div>
     <div class="panel" style="margin-top:16px">
@@ -103,7 +110,23 @@
       </div>
       <div id="trainStats" style="margin-top:10px"></div>
     </div>
-    <div class="panel" style="margin-top:16px">
+
+  </aside>
+</main>
+
+<section class="pageView" id="viewRoadmap" hidden>
+  <div class="roadWrap">
+    <div class="panel">
+      <h2>テンプレ習得ロードマップ</h2>
+      <p class="padNote">開幕テンプレを難易度の順に並べた学習ルートです。平らな土台づくりから始めて、Tスピン系、最後にパーフェクトクリアへ進みます。カードのボタンから、そのまま練習に入れます。自己ベスト（一致率）はこの端末に記録されます。</p>
+      <div id="roadList"></div>
+    </div>
+  </div>
+</section>
+
+<section class="pageView" id="viewSettings" hidden>
+  <div class="settingsWrap">
+    <div class="panel">
       <h2>キー設定（キーコンフィグ）</h2>
       <div class="presetGrid" id="presetList" role="group" aria-label="環境別キープリセット"></div>
       <div class="presetState" id="presetState"></div>
@@ -111,7 +134,7 @@
       <div class="keyNotice" id="keyNotice" aria-live="polite"></div>
       <div class="keyHint">行をクリックすると「キー入力待ち」になります。割り当てたいキーを押してください（Escでキャンセル）。すでに使われているキーを選ぶと、元のアクションと自動で入れ替わります。設定はこの端末に保存され、次回もそのまま使えます。</div>
     </div>
-    <div class="panel" style="margin-top:16px">
+    <div class="panel">
       <h2>ゲームパッド（Joy-Con / Proコン）</h2>
       <div class="padStatus"><span class="padDot" id="padDot"></span><span id="padStatus">未接続</span></div>
       <p class="padNote">Bluetoothで接続した Joy-Con / Nintendo Switch Pro コントローラー等を、ブラウザの Gamepad API で認識します。キーボード・タッチと併用できます。<br>※ブラウザの仕様上、接続後も<b>パッドのボタンを一度押すまで認識しない</b>ことがあります。その場合はどれかボタンを1回押してください。</p>
@@ -126,12 +149,12 @@
       </div>
       <div class="padHelp" id="padHelp"></div>
     </div>
-    <div class="panel" style="margin-top:16px">
+    <div class="panel">
       <h2>操作ガイド（キーボード）</h2>
       <div class="keysHelp" id="keysHelp"></div>
     </div>
-  </aside>
-</main>
+  </div>
+</section>
 
 <!-- result -->
 <div class="resultPanel" id="resultPanel">
@@ -142,6 +165,21 @@
   仕様：10×20盤面 / 7種1巡 / SRS回転＋壁キック（JLSTZ・I別テーブル）/ ロックディレイ約500ms（移動リセット上限15回）/ Tスピン判定（3コーナー法）/ パーフェクトクリア検出。
   テンプレ練習ではライン消去を止めて「形」だけを採点します（1巡目28セルの一致率）。各テンプレは表示された出現順で実際に積み上げ可能な配置から作っています。
 </footer>
+
+<div class="startModal" id="startModal" role="dialog" aria-modal="true" aria-label="はじめる">
+  <div class="startCard">
+    <h2>テトリス テンプレ積みトレーナー</h2>
+    <p class="startLead">まずは操作プリセットを選んでください。いつも遊んでいる環境に合わせると、そのままの指の感覚で練習できます。あとから「設定」画面でも変えられます。</p>
+    <div class="presetGrid" id="startPresetList" role="group" aria-label="環境別キープリセット（開始時）"></div>
+    <div class="startRow"><span>テーマ</span><button type="button" class="soundBtn" id="startThemeBtn">テーマ：ライト</button></div>
+    <div class="startBtns">
+      <button type="button" class="bigBtn" data-start-mode="free">フリープレイで開始</button>
+      <button type="button" class="bigBtn" data-start-mode="train">テンプレ練習で開始</button>
+      <button type="button" class="bigBtn" data-start-mode="skill">スキルチェックで開始</button>
+    </div>
+    <label class="skipRow"><input type="checkbox" id="skipStart"> 次回からこの画面を表示しない</label>
+  </div>
+</div>
 
 <script src="main.js"></script>
 </body>

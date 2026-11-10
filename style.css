@@ -1,9 +1,21 @@
 :root{
+    color-scheme: light;
+    --bg:#f3f5f9; --panel:#ffffff; --panel2:#edf1f7; --line:#d5dde8;
+    --text:#182233; --muted:#5a6a82; --faint:#8d9cae;
+    --cyan:#0891b2; --amber:#d97706; --green:#059669; --red:#dc2626; --orange:#ea580c;
+    --board-bg:#e9eef5; --grid-line:rgba(30,50,90,0.10);
+    --guide-fill:rgba(24,34,51,0.10); --guide-stroke:rgba(24,34,51,0.38);
+    --kbd-bg:#ffffff; --track-bg:#e3e9f2;
+    --radius:12px;
+  }
+  :root[data-theme="dark"]{
     color-scheme: dark;
     --bg:#0a0d13; --panel:#121724; --panel2:#171e2f; --line:#26304a;
     --text:#e8ecf4; --muted:#9aa7bd; --faint:#6b7891;
     --cyan:#22d3ee; --amber:#fbbf24; --green:#34d399; --red:#f87171; --orange:#fb923c;
-    --radius:12px;
+    --board-bg:#0d1119; --grid-line:rgba(120,140,180,0.10);
+    --guide-fill:rgba(232,236,244,0.10); --guide-stroke:rgba(232,236,244,0.35);
+    --kbd-bg:#0b0f18; --track-bg:#0d1119;
   }
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
@@ -71,8 +83,8 @@
   .sideBox .lab{font-size:11px; font-weight:900; color:var(--muted); letter-spacing:.12em; margin-bottom:6px}
   .sideBox canvas{display:block; margin:0 auto}
   .nextStack{display:flex; flex-direction:column; gap:2px}
-  .boardWrap{position:relative; background:#0d1119; border:1px solid var(--line); border-radius:var(--radius); padding:8px}
-  canvas#board{display:block; width:min(300px,62vw); height:auto; aspect-ratio:1/2; background:#0d1119}
+  .boardWrap{position:relative; background:var(--board-bg); border:1px solid var(--line); border-radius:var(--radius); padding:8px}
+  canvas#board{display:block; width:min(300px,62vw); height:auto; aspect-ratio:1/2; background:var(--board-bg)}
   .overlay{
     position:absolute; inset:8px; background:rgba(7,10,16,.88);
     display:none; flex-direction:column; align-items:center; justify-content:center; gap:10px;
@@ -119,7 +131,7 @@
   .actionFeed{min-height:22px; font-size:13px; font-weight:900; color:var(--amber); text-align:center}
   .keysHelp{font-size:12px; color:var(--muted); line-height:2}
   .keysHelp kbd{
-    background:#0d1119; border:1px solid var(--line); border-bottom-width:2px; border-radius:5px;
+    background:var(--kbd-bg); border:1px solid var(--line); border-bottom-width:2px; border-radius:5px;
     padding:1px 6px; font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--text);
   }
 
@@ -141,7 +153,7 @@
   .keyRow .act{font-size:12.5px; font-weight:700}
   .keyRow .caps{display:flex; gap:4px; flex-shrink:0}
   .keyCap{
-    background:#0d1119; border:1px solid var(--line); border-bottom-width:2px; border-radius:5px;
+    background:var(--kbd-bg); border:1px solid var(--line); border-bottom-width:2px; border-radius:5px;
     padding:2px 8px; font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--text); white-space:nowrap;
   }
   .keyRow.listening{border-color:var(--amber); background:#2a2113}
@@ -178,7 +190,7 @@
   .rankFlex{display:flex; gap:22px; align-items:center; flex-wrap:wrap}
   .scoreBars{flex:1; min-width:240px}
   .barRow{display:grid; grid-template-columns:86px 1fr 44px; gap:10px; align-items:center; margin:7px 0; font-size:12.5px}
-  .barRow .track{height:10px; background:#0d1119; border:1px solid var(--line); border-radius:99px; overflow:hidden}
+  .barRow .track{height:10px; background:var(--track-bg); border:1px solid var(--line); border-radius:99px; overflow:hidden}
   .barRow .fill{height:100%; background:var(--cyan); border-radius:99px}
   .barRow .fill.warn{background:var(--orange)} .barRow .fill.bad{background:var(--red)} .barRow .fill.good{background:var(--green)}
   .comment{font-size:14px; line-height:1.85; color:#dbe3f0; margin-top:12px}
@@ -206,7 +218,7 @@
   .gIco{width:24px; flex:none; text-align:center; font-size:14px; color:var(--accent, #7dd3fc)}
   .gLab{flex:1; font-size:12.5px; color:var(--text); line-height:1.35}
   .gLab small{display:block; color:var(--muted); font-size:11px}
-  .gRow kbd, .quickGuide kbd, .padHelp kbd{background:#0b0f18; border:1px solid var(--line); border-bottom-width:2px; border-radius:6px; padding:1px 7px; font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--text); white-space:nowrap}
+  .gRow kbd, .quickGuide kbd, .padHelp kbd{background:var(--kbd-bg); border:1px solid var(--line); border-bottom-width:2px; border-radius:6px; padding:1px 7px; font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--text); white-space:nowrap}
   .gKeys{display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end}
   .quickGuide{display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-bottom:10px}
   .qChip{display:inline-flex; align-items:center; gap:6px; background:var(--panel); border:1px solid var(--line); border-radius:999px; padding:4px 11px; font-size:11.5px; color:var(--muted)}
@@ -224,3 +236,51 @@
   .presetCard span{color:var(--muted); font-size:11px; line-height:1.45; display:block}
   .presetCard.active{border-color:var(--cyan, #38bdf8); background:rgba(56,189,248,.12)}
   .presetCard:focus-visible{outline:2px solid var(--amber); outline-offset:2px}
+
+  /* ---- ビュー切替ナビ ---- */
+  nav.views{display:flex; gap:8px; max-width:1180px; margin:0 auto; padding:10px 18px 0; flex-wrap:wrap}
+  nav.views button{background:transparent; color:var(--muted); border:1px solid transparent; border-bottom:3px solid transparent; border-radius:8px 8px 0 0; padding:8px 16px; font-size:14.5px; font-weight:900}
+  nav.views button.active{color:var(--text); border-bottom-color:var(--cyan)}
+  nav.views button:focus-visible{outline:2px solid var(--amber); outline-offset:2px}
+  .pageView{max-width:1180px; margin:0 auto; padding:6px 18px 28px}
+  .settingsWrap, .roadWrap{max-width:840px; margin:0 auto; display:grid; gap:16px}
+  .settingsWrap .panel{margin-top:0 !important}
+
+  /* ---- プレイ画面の課題チップ ---- */
+  #tplChips{display:flex; flex-wrap:wrap; gap:6px}
+  .tplChip{background:var(--panel2); color:var(--muted); border:1px solid var(--line); border-radius:999px; padding:5px 12px; font-size:12.5px; font-weight:700; min-height:32px}
+  .tplChip.active{background:var(--cyan); border-color:var(--cyan); color:#ffffff}
+  :root[data-theme="dark"] .tplChip.active{color:#06222a}
+  .tplChip:focus-visible{outline:2px solid var(--amber); outline-offset:2px}
+
+  /* ---- ロードマップ ---- */
+  .roadCard{display:flex; gap:14px; background:var(--panel2); border:1px solid var(--line); border-radius:12px; padding:13px 14px; margin-top:10px; align-items:flex-start}
+  .roadCard.sel{border-color:var(--cyan)}
+  .stepBadge{flex:none; background:var(--cyan); color:#fff; font-weight:900; font-size:11px; border-radius:8px; padding:5px 8px; letter-spacing:.04em}
+  :root[data-theme="dark"] .stepBadge{color:#06222a}
+  .roadMain{flex:1; min-width:0}
+  .roadMain .nm{font-weight:900; font-size:15.5px; display:flex; gap:8px; align-items:baseline; flex-wrap:wrap}
+  .roadMain .diff{color:var(--amber); font-size:11.5px}
+  .roadMain .tag{color:var(--muted); font-size:12.5px; margin-top:2px}
+  .roadMain .aim{font-size:12.5px; color:var(--text); margin-top:6px; line-height:1.6}
+  .roadMain details{margin-top:6px; font-size:12.5px; color:var(--muted); line-height:1.6}
+  .roadMain summary{cursor:pointer; color:var(--cyan); font-weight:700; font-size:12px}
+  .bestRow{display:flex; align-items:center; gap:8px; margin-top:8px; font-size:12px; color:var(--muted)}
+  .bestTrack{flex:1; height:8px; background:var(--track-bg); border:1px solid var(--line); border-radius:99px; overflow:hidden}
+  .bestFill{height:100%; background:var(--green)}
+  .roadBtn{flex:none; background:var(--cyan); border:1px solid var(--cyan); color:#fff; border-radius:9px; padding:9px 13px; font-weight:900; font-size:13px}
+  :root[data-theme="dark"] .roadBtn{color:#06222a}
+  .roadBtn:focus-visible{outline:2px solid var(--amber); outline-offset:2px}
+  canvas.roadFig{flex:none; width:118px; height:64px; background:var(--board-bg); border:1px solid var(--line); border-radius:8px}
+  @media (max-width:720px){ .roadCard{flex-wrap:wrap} canvas.roadFig{order:3} }
+
+  /* ---- 起動ポップアップ ---- */
+  .startModal{position:fixed; inset:0; z-index:60; display:none; align-items:center; justify-content:center; background:rgba(8,12,20,0.55); padding:16px}
+  .startModal.show{display:flex}
+  .startCard{background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:16px; max-width:620px; width:100%; max-height:92vh; overflow:auto; padding:22px}
+  .startCard h2{margin:0 0 6px; font-size:19px; font-weight:900}
+  .startLead{color:var(--muted); font-size:13px; margin:0 0 14px; line-height:1.6}
+  .startRow{display:flex; align-items:center; gap:10px; margin:12px 0; font-size:13px; font-weight:700}
+  .startBtns{display:grid; gap:8px; margin-top:6px}
+  .startBtns .bigBtn{width:100%}
+  .skipRow{display:flex; gap:8px; align-items:center; margin-top:14px; font-size:12.5px; color:var(--muted); cursor:pointer}

@@ -402,6 +402,22 @@ function lockPiece(g){
    描画
    ============================================================ */
 var boardCv = document.getElementById("board");
+function cssVar(name){
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+var THEME_LS = "tetris-trainer-theme-v1";
+var curTheme = "light";
+try{ curTheme = localStorage.getItem(THEME_LS) || "light"; }catch(e){}
+function applyTheme(t){
+  curTheme = t;
+  document.documentElement.setAttribute("data-theme", t);
+  try{ localStorage.setItem(THEME_LS, t); }catch(e){}
+  var label = "テーマ：" + (t === "dark" ? "ダーク" : "ライト");
+  var b = document.getElementById("themeBtn"); if(b) b.textContent = label;
+  var sb = document.getElementById("startThemeBtn"); if(sb) sb.textContent = label;
+  if(typeof drawAll === "function" && typeof G !== "undefined" && G) drawAll();
+}
+function toggleTheme(){ applyTheme(curTheme === "dark" ? "light" : "dark"); }
 var bctx = boardCv.getContext("2d");
 var CELL = 30;
 (function fitDpr(){
@@ -436,9 +452,9 @@ function evalColors(){
 function drawBoard(){
   var ctx = bctx;
   ctx.clearRect(0,0,300,600);
-  ctx.fillStyle = "#0d1119"; ctx.fillRect(0,0,300,600);
+  ctx.fillStyle = cssVar("--board-bg"); ctx.fillRect(0,0,300,600);
   // grid lines
-  ctx.strokeStyle = "rgba(120,140,180,0.10)"; ctx.lineWidth = 1;
+  ctx.strokeStyle = cssVar("--grid-line"); ctx.lineWidth = 1;
   for(var x=1;x<COLS;x++){ ctx.beginPath(); ctx.moveTo(x*CELL+.5,0); ctx.lineTo(x*CELL+.5,600); ctx.stroke(); }
   for(var y=1;y<VROWS;y++){ ctx.beginPath(); ctx.moveTo(0,y*CELL+.5); ctx.lineTo(300,y*CELL+.5); ctx.stroke(); }
   if(!G) return;
@@ -455,9 +471,9 @@ function drawBoard(){
         ctx.strokeRect(gx*CELL+3, gy*CELL+3, CELL-6, CELL-6);
         ctx.setLineDash([]);
       } else if(!filledHere){
-        ctx.fillStyle = "rgba(232,236,244,0.10)";
+        ctx.fillStyle = cssVar("--guide-fill");
         ctx.fillRect(gx*CELL+2, gy*CELL+2, CELL-4, CELL-4);
-        ctx.strokeStyle = "rgba(232,236,244,0.35)"; ctx.lineWidth = 1;
+        ctx.strokeStyle = cssVar("--guide-stroke"); ctx.lineWidth = 1;
         ctx.strokeRect(gx*CELL+2.5, gy*CELL+2.5, CELL-5, CELL-5);
       }
     });
@@ -723,26 +739,30 @@ function assignKey(action, code){
   renderKeyConfig();
 }
 function renderPresetList(){
-  var wrap = document.getElementById("presetList");
-  if(!wrap) return;
-  wrap.innerHTML = "";
-  Object.keys(PRESETS).forEach(function(name){
-    var p = PRESETS[name];
-    var b = document.createElement("button");
-    b.type = "button";
-    b.className = "presetCard" + (activePreset === name ? " active" : "");
-    b.setAttribute("data-preset", name);
-    b.innerHTML = "<b>" + p.label + "</b><small>" + p.env + "</small><span>" + p.desc + "</span>";
-    wrap.appendChild(b);
+  ["presetList", "startPresetList"].forEach(function(id){
+    var wrap = document.getElementById(id);
+    if(!wrap) return;
+    wrap.innerHTML = "";
+    Object.keys(PRESETS).forEach(function(name){
+      var p = PRESETS[name];
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "presetCard" + (activePreset === name ? " active" : "");
+      b.setAttribute("data-preset", name);
+      b.innerHTML = "<b>" + p.label + "</b><small>" + p.env + "</small><span>" + p.desc + "</span>";
+      wrap.appendChild(b);
+    });
   });
 }
-var presetListEl = document.getElementById("presetList");
-if(presetListEl){
-  presetListEl.addEventListener("click", function(e){
-    var b = e.target.closest("[data-preset]");
-    if(b) applyPreset(b.getAttribute("data-preset"));
-  });
-}
+["presetList", "startPresetList"].forEach(function(id){
+  var el = document.getElementById(id);
+  if(el){
+    el.addEventListener("click", function(e){
+      var b = e.target.closest("[data-preset]");
+      if(b) applyPreset(b.getAttribute("data-preset"));
+    });
+  }
+});
 function helpLine(){
   function f(a){ return bindings[a].map(fmtCode).join("/"); }
   return "ガイドライン準拠のエンドレスモードです。<br>" + f("left") + f("right") + " 移動 / " + f("rotR") + " 回転 / " + f("hard") + " ハードドロップ / " + f("hold") + " ホールド<br>盤面の上にも主なキーを出しています。割り当て変更は右の「キー設定」から。";
@@ -1094,15 +1114,14 @@ function updateStats(){
   $("stB2b").textContent = G.b2b ? "継続中" : "—";
 }
 function renderTplList(){
-  var wrap = $("tplList"); wrap.innerHTML = "";
+  var wrap = $("tplChips"); if(!wrap) return; wrap.innerHTML = "";
   TEMPLATES.forEach(function(t){
     var b = document.createElement("button");
-    b.type = "button"; b.className = "tplCard" + (t.id === selectedTpl.id ? " active" : "");
-    b.innerHTML = '<span class="nm"><span>' + t.name + '</span><span class="diff">' + t.diffLabel + '</span></span><span class="tag">' + t.tag + '</span>';
+    b.type = "button"; b.className = "tplChip" + (t.id === selectedTpl.id ? " active" : "");
+    b.textContent = t.name;
     b.addEventListener("click", function(){
-      selectedTpl = t; renderTplList(); renderTplDesc();
+      selectedTpl = t; renderTplList(); renderTplDesc(); renderRoadmap();
       if(mode === "train") startCurrent();
-      else if(mode !== "skill"){ /* free: just preview guide info */ }
     });
     wrap.appendChild(b);
   });
@@ -1110,10 +1129,9 @@ function renderTplList(){
 function renderTplDesc(){
   var t = selectedTpl;
   $("tplDesc").innerHTML =
-    '<p><span class="k">狙い：</span>' + t.aim + '</p>' +
-    '<p><span class="k">特徴：</span>' + t.feat + '</p>' +
-    '<p><span class="k">コツ：</span>' + t.tips + '</p>' +
-    '<p><span class="k">出現順：</span><b style="letter-spacing:.14em">' + t.seq.join(" → ") + '</b>（ホールドで入れ替え可）</p>';
+    '<p><span class="k">' + t.name + '：</span>' + t.tag + '</p>' +
+    '<p><span class="k">出現順：</span><b style="letter-spacing:.14em">' + t.seq.join(" → ") + '</b>（ホールドで入れ替え可）</p>' +
+    '<p style="color:var(--muted)">狙い・特徴・コツは「テンプレ図鑑」にまとめています。</p>';
 }
 var MODE_NOTES = {
   free: "通常のエンドレスモード。10ラインごとにレベルが上がり、落下速度が速くなります。Tスピン・コンボ・B2B・パーフェクトクリアも採点されます。",
@@ -1216,6 +1234,10 @@ function finishTrain(){
   var r = judge(G);
   drawAll(); updateStats();
   if(mode === "skill"){ onSkillChallengeDone(r); return; }
+  if(mode === "train" && G.target){
+    var best = loadBest();
+    if(!best[G.target.id] || r.acc > best[G.target.id]){ best[G.target.id] = r.acc; saveBest(best); }
+  }
   var comment =
     r.acc >= 95 ? "ほぼ完璧な再現です。この形は身体に入っています。" :
     r.acc >= 80 ? "かなり良い再現。ズレたセル（赤）の位置を確認して、もう1回。" :
@@ -1233,7 +1255,7 @@ function finishTrain(){
     '<p class="comment">' + comment + '<br><span style="color:var(--muted);font-size:12.5px">緑＝目標どおりのセル／赤＝目標外に置いたセル／赤破線＝置けなかった目標セル。ホールド使用：' + r.holds + '回</span></p>',
     [
       { label: "もう一度挑戦 (R)", fn: function(){ startCurrent(); }, primary: true },
-      { label: "テンプレを変える", fn: function(){ hideResult(); window.scrollTo({top:0, behavior:"smooth"}); } }
+      { label: "テンプレ図鑑で選ぶ", fn: function(){ hideResult(); switchView("roadmap"); } }
     ]
   );
   showOverlay("判定完了", "一致率 <b>" + r.acc + "%</b>（" + r.hit + "/28セル）<br>下の結果パネルで詳細を確認できます。", "もう一度 (R)", function(){ hideOverlay(); startCurrent(); });
@@ -1352,12 +1374,122 @@ function finishSkill(){
   skill = null;
 }
 
+/* ============================================================
+   自己ベスト（テンプレ別・一致率）
+   ============================================================ */
+var BEST_LS = "tetris-trainer-best-v1";
+function loadBest(){
+  try{ return JSON.parse(localStorage.getItem(BEST_LS) || "{}") || {}; }catch(e){ return {}; }
+}
+function saveBest(b){
+  try{ localStorage.setItem(BEST_LS, JSON.stringify(b)); }catch(e){}
+}
+
+/* ============================================================
+   テンプレ図鑑（習得ロードマップ）
+   ============================================================ */
+var ROADMAP_ORDER = ["hira", "yama", "tki", "dt", "pc"];
+function drawRoadFig(cv, t){
+  var dpr = Math.min(2, window.devicePixelRatio || 1);
+  cv.width = 118 * dpr; cv.height = 64 * dpr;
+  var ctx = cv.getContext("2d");
+  var W = 118, H = 64;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,W,H);
+  var size = 11, ox = (W - size*10)/2, oy = H - size*5 - 4;
+  t.placements.forEach(function(pl, i){
+    ctx.fillStyle = COLORS[t.seq[i]];
+    pl.forEach(function(c){
+      var px = ox + c[0]*size, py = oy + (c[1]-15)*size;
+      ctx.fillRect(px+1, py+1, size-2, size-2);
+    });
+  });
+}
+function renderRoadmap(){
+  var wrap = $("roadList"); if(!wrap) return;
+  var best = loadBest();
+  wrap.innerHTML = "";
+  ROADMAP_ORDER.forEach(function(id, idx){
+    var t = TEMPLATES.filter(function(x){ return x.id === id; })[0];
+    if(!t) return;
+    var card = document.createElement("div");
+    card.className = "roadCard" + (t.id === selectedTpl.id ? " sel" : "");
+    var b = best[t.id];
+    card.innerHTML =
+      '<span class="stepBadge">STEP ' + (idx+1) + '</span>' +
+      '<div class="roadMain">' +
+        '<div class="nm"><span>' + t.name + '</span><span class="diff">' + t.diffLabel + '</span></div>' +
+        '<div class="tag">' + t.tag + '</div>' +
+        '<p class="aim">' + t.aim + '</p>' +
+        '<details><summary>特徴・コツ・出現順を見る</summary>' +
+          '<p><span class="k">特徴：</span>' + t.feat + '</p>' +
+          '<p><span class="k">コツ：</span>' + t.tips + '</p>' +
+          '<p><span class="k">出現順：</span><b style="letter-spacing:.14em">' + t.seq.join(" → ") + '</b></p>' +
+        '</details>' +
+        '<div class="bestRow"><span>自己ベスト</span><span class="bestTrack"><span class="bestFill" style="display:block;width:' + (b || 0) + '%"></span></span><b>' + (b == null ? "未挑戦" : b + "%") + '</b></div>' +
+      '</div>';
+    var fig = document.createElement("canvas");
+    fig.className = "roadFig";
+    card.appendChild(fig);
+    var btn = document.createElement("button");
+    btn.type = "button"; btn.className = "roadBtn"; btn.textContent = "このテンプレで練習する";
+    btn.addEventListener("click", function(){
+      selectedTpl = t; renderTplList(); renderTplDesc();
+      switchView("play"); setMode("train");
+    });
+    card.appendChild(btn);
+    wrap.appendChild(card);
+    drawRoadFig(fig, t);
+  });
+}
+
+/* ============================================================
+   ビュー切替（プレイ / 図鑑 / 設定）
+   ============================================================ */
+var currentView = "play";
+function switchView(v){
+  currentView = v;
+  $("viewPlay").hidden = v !== "play";
+  $("viewRoadmap").hidden = v !== "roadmap";
+  $("viewSettings").hidden = v !== "settings";
+  document.querySelector("nav.modes").style.display = v === "play" ? "" : "none";
+  document.querySelectorAll("nav.views button").forEach(function(b){
+    b.classList.toggle("active", b.getAttribute("data-view") === v);
+  });
+  if(v !== "play" && typeof G !== "undefined" && G && G.running && !G.paused && !G.over && !G.finished) togglePause();
+  if(v === "roadmap") renderRoadmap();
+  window.scrollTo({ top: 0 });
+}
+document.querySelectorAll("nav.views button").forEach(function(b){
+  b.addEventListener("click", function(){ switchView(b.getAttribute("data-view")); });
+});
+
+/* ============================================================
+   起動ポップアップ
+   ============================================================ */
+var SKIP_START_LS = "tetris-trainer-skip-start-v1";
+function closeStartModal(){
+  $("startModal").classList.remove("show");
+  var cb = $("skipStart");
+  if(cb && cb.checked){ try{ localStorage.setItem(SKIP_START_LS, "1"); }catch(e){} }
+}
+document.querySelectorAll("[data-start-mode]").forEach(function(b){
+  b.addEventListener("click", function(){
+    closeStartModal();
+    switchView("play");
+    setMode(b.getAttribute("data-start-mode"));
+  });
+});
+var themeBtnEl = $("themeBtn"); if(themeBtnEl) themeBtnEl.addEventListener("click", toggleTheme);
+var startThemeBtnEl = $("startThemeBtn"); if(startThemeBtnEl) startThemeBtnEl.addEventListener("click", toggleTheme);
+
 /* mode tab events */
 document.querySelectorAll("nav.modes button").forEach(function(b){
   b.addEventListener("click", function(){ setMode(b.getAttribute("data-mode")); });
 });
 
 /* init */
+applyTheme(curTheme);
 renderTplList();
 renderTplDesc();
 renderKeyConfig();
@@ -1366,3 +1498,8 @@ $("modeNote").innerHTML = MODE_NOTES.free;
 G = makeGame({}); G.running = false; spawn(G);
 drawAll(); updateStats();
 showOverlay("フリープレイ", helpLine(), "スタート", function(){ hideOverlay(); if(G){ G.running = true; G.startTime = performance.now(); G.startStamp = G.startTime; } });
+(function(){
+  var skip = false;
+  try{ skip = localStorage.getItem(SKIP_START_LS) === "1"; }catch(e){}
+  if(!skip) $("startModal").classList.add("show");
+})();
