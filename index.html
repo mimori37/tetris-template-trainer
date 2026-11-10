@@ -134,6 +134,57 @@
     padding:1px 6px; font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--text);
   }
 
+  /* key config */
+  .presetBtns{display:flex; gap:6px; margin-bottom:6px}
+  .presetBtns button{
+    flex:1; background:var(--panel2); color:var(--muted); border:1px solid var(--line);
+    border-radius:8px; padding:7px 6px; font-size:12px; font-weight:900; line-height:1.35;
+  }
+  .presetBtns button small{display:block; font-size:10px; font-weight:500; color:var(--faint)}
+  .presetBtns button.active{background:var(--cyan); border-color:var(--cyan); color:#06222a}
+  .presetBtns button.active small{color:#0b3a46}
+  .presetBtns button:focus-visible, .keyRow:focus-visible{outline:2px solid var(--amber); outline-offset:2px}
+  .presetState{font-size:11.5px; color:var(--faint); margin:2px 0 4px}
+  .presetState b{color:var(--amber); font-weight:700}
+  .keyGroup{font-size:11px; font-weight:900; color:var(--muted); letter-spacing:.05em; margin:12px 0 2px}
+  .keyGroupNote{font-size:11px; color:var(--faint); line-height:1.55; margin:0 0 6px}
+  .keyRow{
+    display:flex; justify-content:space-between; align-items:center; gap:8px; width:100%;
+    background:var(--panel2); color:var(--text); border:1px solid var(--line);
+    border-radius:8px; padding:6px 8px; margin:0 0 5px; min-height:38px; text-align:left;
+  }
+  .keyRow:hover{border-color:#3a4a6e}
+  .keyRow .act{font-size:12.5px; font-weight:700}
+  .keyRow .caps{display:flex; gap:4px; flex-shrink:0}
+  .keyCap{
+    background:#0d1119; border:1px solid var(--line); border-bottom-width:2px; border-radius:5px;
+    padding:2px 8px; font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--text); white-space:nowrap;
+  }
+  .keyRow.listening{border-color:var(--amber); background:#2a2113}
+  .keyRow.listening .keyCap{border-color:var(--amber); color:var(--amber)}
+  .keyNotice{min-height:18px; font-size:11.5px; color:var(--amber); line-height:1.5; margin-top:4px}
+  .keyHint{font-size:11px; color:var(--faint); line-height:1.6; margin-top:2px}
+
+  /* gamepad */
+  .padStatus{
+    display:flex; align-items:center; gap:8px; background:var(--panel2); border:1px solid var(--line);
+    border-radius:8px; padding:8px 10px; font-size:12.5px; font-weight:700; line-height:1.5; word-break:break-all;
+  }
+  .padDot{width:9px; height:9px; border-radius:99px; background:var(--faint); flex-shrink:0}
+  .padDot.on{background:var(--green); box-shadow:0 0 8px rgba(52,211,153,.7)}
+  .padNote{font-size:11px; color:var(--faint); line-height:1.6; margin:6px 0 0}
+  .segBtns{display:flex; gap:6px; margin-top:12px}
+  .segBtns button{
+    flex:1; background:var(--panel2); color:var(--muted); border:1px solid var(--line);
+    border-radius:8px; padding:7px 6px; font-size:12px; font-weight:900; line-height:1.35;
+  }
+  .segBtns button small{display:block; font-size:10px; font-weight:500; color:var(--faint)}
+  .segBtns button.active{background:var(--cyan); border-color:var(--cyan); color:#06222a}
+  .segBtns button.active small{color:#0b3a46}
+  .segBtns button:focus-visible{outline:2px solid var(--amber); outline-offset:2px}
+  .padHelp{font-size:11.5px; color:var(--muted); line-height:1.8; margin-top:10px}
+  .padHelp b{color:var(--text)}
+
   /* result */
   .resultPanel{display:none; max-width:1180px; margin:0 auto 28px; padding:0 18px}
   .resultPanel.show{display:block}
@@ -237,7 +288,7 @@
       <div class="row">
         <button class="tbtn" data-t="hold">HOLD<small>ホールド</small></button>
         <button class="tbtn" data-t="down">▼<small>ソフト</small></button>
-        <button class="tbtn" data-t="drop" style="grid-column:span 2">⤓ ハードドロップ<small>Space</small></button>
+        <button class="tbtn" data-t="drop" style="grid-column:span 2">⤓ ハードドロップ<small id="dropKeyLabel">Space</small></button>
       </div>
     </div>
   </section>
@@ -259,14 +310,33 @@
       <div id="trainStats" style="margin-top:10px"></div>
     </div>
     <div class="panel" style="margin-top:16px">
-      <h2>キーボード操作</h2>
-      <div class="keysHelp">
-        <kbd>←</kbd><kbd>→</kbd> 移動（DAS 130ms / ARR 25ms）<br>
-        <kbd>↓</kbd> ソフトドロップ<br>
-        <kbd>↑</kbd> / <kbd>X</kbd> 右回転　<kbd>Z</kbd> 左回転<br>
-        <kbd>Space</kbd> ハードドロップ<br>
-        <kbd>C</kbd> ホールド　<kbd>P</kbd> 一時停止　<kbd>R</kbd> リスタート
+      <h2>キー設定（キーコンフィグ）</h2>
+      <div class="presetBtns" role="group" aria-label="キープリセット">
+        <button type="button" id="presetStandard">標準<small>ガイドライン風</small></button>
+        <button type="button" id="presetPuyo">ぷよテト横持ち風<small>Joy-Con 1本・横持ち</small></button>
       </div>
+      <div class="presetState" id="presetState"></div>
+      <div id="keyConfigList"></div>
+      <div class="keyNotice" id="keyNotice" aria-live="polite"></div>
+      <div class="keyHint">行をクリックすると「キー入力待ち」になります。割り当てたいキーを押してください（Escでキャンセル）。すでに使われているキーを選ぶと、元のアクションと自動で入れ替わります。設定はこの端末に保存され、次回もそのまま使えます。</div>
+    </div>
+    <div class="panel" style="margin-top:16px">
+      <h2>ゲームパッド（Joy-Con / Proコン）</h2>
+      <div class="padStatus"><span class="padDot" id="padDot"></span><span id="padStatus">未接続</span></div>
+      <p class="padNote">Bluetoothで接続した Joy-Con / Nintendo Switch Pro コントローラー等を、ブラウザの Gamepad API で認識します。キーボード・タッチと併用できます。<br>※ブラウザの仕様上、接続後も<b>パッドのボタンを一度押すまで認識しない</b>ことがあります。その場合はどれかボタンを1回押してください。</p>
+      <div class="segBtns" role="group" aria-label="パッドの持ち方">
+        <button type="button" id="padModeDual">両手持ち<small>Proコン / Joy-Conペア</small></button>
+        <button type="button" id="padModeSingle">横持ちモード<small>Joy-Con 1本</small></button>
+      </div>
+      <div class="segBtns" id="padSideRow" role="group" aria-label="横持ちで使うJoy-Con" style="display:none">
+        <button type="button" id="padSideL">Joy-Con (L)</button>
+        <button type="button" id="padSideR">Joy-Con (R)</button>
+      </div>
+      <div class="padHelp" id="padHelp"></div>
+    </div>
+    <div class="panel" style="margin-top:16px">
+      <h2>キーボード操作（現在の割り当て）</h2>
+      <div class="keysHelp" id="keysHelp"></div>
     </div>
   </aside>
 </main>
@@ -814,29 +884,195 @@ function updateLiveMatch(){
 }
 
 /* ============================================================
+   キー設定（キーコンフィグ）: プリセット / カスタム / 保存
+   ============================================================ */
+var ACTIONS = {
+  left:   { label: "左移動" },
+  right:  { label: "右移動" },
+  down:   { label: "ソフトドロップ" },
+  hard:   { label: "ハードドロップ" },
+  rotR:   { label: "右回転" },
+  rotL:   { label: "左回転" },
+  hold:   { label: "ホールド" },
+  pause:  { label: "一時停止" },
+  restart:{ label: "リスタート" }
+};
+var KEY_GROUPS = [
+  { title: "スティック側（左手）", note: "横持ちでは左手のスティック操作にあたる部分。ぷよテト横持ち風では A／D／S／W のダイヤモンドに割り当てます。", actions: ["left","right","down","hard"] },
+  { title: "ボタン側（右手）", note: "横持ちでは右手の4ボタン（ダイヤモンド配置）にあたる部分。ぷよテト横持ち風では →＝Aボタン位置（右回転）、↓＝Bボタン位置（左回転）、↑＝Xボタン位置（ホールド）です。", actions: ["rotR","rotL","hold"] },
+  { title: "共通", note: "", actions: ["pause","restart"] }
+];
+var PRESETS = {
+  standard: {
+    label: "標準（ガイドライン風）",
+    bindings: { left:["ArrowLeft"], right:["ArrowRight"], down:["ArrowDown"], hard:["Space"], rotR:["ArrowUp","KeyX"], rotL:["KeyZ"], hold:["KeyC"], pause:["KeyP"], restart:["KeyR"] }
+  },
+  puyo: {
+    label: "ぷよテト横持ち風",
+    bindings: { left:["KeyA"], right:["KeyD"], down:["KeyS"], hard:["KeyW"], rotR:["ArrowRight"], rotL:["ArrowDown"], hold:["ArrowUp"], pause:["KeyP"], restart:["KeyR"] }
+  }
+};
+var LS_KEY = "tetris-trainer-keybindings-v1";
+function cloneBindings(b){
+  var out = {};
+  Object.keys(ACTIONS).forEach(function(a){ out[a] = (b[a] || []).slice(); });
+  return out;
+}
+function loadBindings(){
+  try{
+    var raw = localStorage.getItem(LS_KEY);
+    if(raw){
+      var parsed = JSON.parse(raw);
+      if(parsed && parsed.bindings){
+        var ok = Object.keys(ACTIONS).every(function(a){ return Array.isArray(parsed.bindings[a]) && parsed.bindings[a].length > 0; });
+        if(ok) return { bindings: cloneBindings(parsed.bindings), preset: parsed.preset || "custom" };
+      }
+    }
+  }catch(e){}
+  return { bindings: cloneBindings(PRESETS.standard.bindings), preset: "standard" };
+}
+var keyConfig = loadBindings();
+var bindings = keyConfig.bindings;
+var activePreset = keyConfig.preset; // "standard" | "puyo" | "custom"
+var capturingAction = null;
+function saveBindings(){
+  try{ localStorage.setItem(LS_KEY, JSON.stringify({ bindings: bindings, preset: activePreset })); }catch(e){}
+}
+function fmtCode(code){
+  var map = { ArrowLeft:"←", ArrowRight:"→", ArrowUp:"↑", ArrowDown:"↓", Space:"Space", ShiftLeft:"Shift(左)", ShiftRight:"Shift(右)", ControlLeft:"Ctrl(左)", ControlRight:"Ctrl(右)", AltLeft:"Alt(左)", AltRight:"Alt(右)", Enter:"Enter", Tab:"Tab", Backspace:"Backspace" };
+  if(map[code]) return map[code];
+  if(code.indexOf("Key") === 0) return code.slice(3);
+  if(code.indexOf("Digit") === 0) return code.slice(5);
+  return code;
+}
+function actionForCode(code){
+  var found = null;
+  Object.keys(ACTIONS).forEach(function(a){ if(bindings[a].indexOf(code) >= 0) found = a; });
+  return found;
+}
+function bindingsMatchPreset(name){
+  var p = PRESETS[name].bindings;
+  return Object.keys(ACTIONS).every(function(a){
+    return bindings[a].length === p[a].length && bindings[a].every(function(c, i){ return c === p[a][i]; });
+  });
+}
+function keyNotice(msg){ var el = document.getElementById("keyNotice"); if(el) el.textContent = msg || ""; }
+function renderKeyConfig(){
+  var wrap = document.getElementById("keyConfigList");
+  if(!wrap) return;
+  wrap.innerHTML = "";
+  KEY_GROUPS.forEach(function(gr){
+    var h = document.createElement("div"); h.className = "keyGroup"; h.textContent = gr.title; wrap.appendChild(h);
+    if(gr.note){ var n = document.createElement("p"); n.className = "keyGroupNote"; n.textContent = gr.note; wrap.appendChild(n); }
+    gr.actions.forEach(function(a){
+      var row = document.createElement("button");
+      row.type = "button";
+      row.className = "keyRow" + (capturingAction === a ? " listening" : "");
+      row.setAttribute("aria-label", ACTIONS[a].label + " のキーを変更");
+      var caps = bindings[a].map(function(c){ return '<span class="keyCap">' + fmtCode(c) + "</span>"; }).join("");
+      if(capturingAction === a) caps = '<span class="keyCap">キーを押してください…</span>';
+      row.innerHTML = '<span class="act">' + ACTIONS[a].label + '</span><span class="caps">' + caps + "</span>";
+      row.addEventListener("click", function(){
+        capturingAction = (capturingAction === a) ? null : a;
+        keyNotice(capturingAction ? "「" + ACTIONS[a].label + "」のキーを押してください。Escでキャンセルします。" : "");
+        renderKeyConfig();
+      });
+      wrap.appendChild(row);
+    });
+  });
+  var st = document.getElementById("presetState");
+  if(st){
+    if(activePreset === "custom") st.innerHTML = "現在の設定：<b>カスタム</b>（プリセットから変更済み）";
+    else st.innerHTML = "現在の設定：<b>" + PRESETS[activePreset].label + "</b>";
+  }
+  var bs = document.getElementById("presetStandard"), bp = document.getElementById("presetPuyo");
+  if(bs) bs.classList.toggle("active", activePreset === "standard");
+  if(bp) bp.classList.toggle("active", activePreset === "puyo");
+  renderKeysHelp();
+}
+function renderKeysHelp(){
+  var el = document.getElementById("keysHelp");
+  if(el){
+    function caps(a){ return bindings[a].map(function(c){ return "<kbd>" + fmtCode(c) + "</kbd>"; }).join(" / "); }
+    el.innerHTML =
+      caps("left") + " " + caps("right") + " 移動（DAS 130ms / ARR 25ms）<br>" +
+      caps("down") + " ソフトドロップ<br>" +
+      caps("rotR") + " 右回転　" + caps("rotL") + " 左回転<br>" +
+      caps("hard") + " ハードドロップ<br>" +
+      caps("hold") + " ホールド　" + caps("pause") + " 一時停止　" + caps("restart") + " リスタート";
+  }
+  var dl = document.getElementById("dropKeyLabel");
+  if(dl) dl.textContent = bindings.hard.map(fmtCode).join(" / ");
+  var pb = document.getElementById("pauseBtn");
+  if(pb) pb.textContent = "⏸ 一時停止 (" + bindings.pause.map(fmtCode).join("/") + ")";
+}
+function applyPreset(name){
+  bindings = cloneBindings(PRESETS[name].bindings);
+  activePreset = name;
+  capturingAction = null;
+  saveBindings();
+  keyNotice("プリセット「" + PRESETS[name].label + "」を適用しました。");
+  renderKeyConfig();
+}
+function assignKey(action, code){
+  if(code === "Escape"){ capturingAction = null; keyNotice("割り当てをキャンセルしました。"); renderKeyConfig(); return; }
+  var oldCodes = bindings[action].slice();
+  var other = actionForCode(code);
+  var msg = "";
+  if(other && other !== action){
+    // 重複は自動入れ替え: 元のアクションには、このアクションの旧キーを渡す
+    bindings[other] = oldCodes.slice();
+    msg = "「" + fmtCode(code) + "」は「" + ACTIONS[other].label + "」で使用中だったため、自動で入れ替えました（" + ACTIONS[other].label + " → " + oldCodes.map(fmtCode).join(" / ") + "）。";
+  }
+  bindings[action] = [code];
+  capturingAction = null;
+  activePreset = bindingsMatchPreset("standard") ? "standard" : bindingsMatchPreset("puyo") ? "puyo" : "custom";
+  saveBindings();
+  keyNotice(msg || "「" + ACTIONS[action].label + "」に " + fmtCode(code) + " を割り当てました。");
+  renderKeyConfig();
+}
+document.getElementById("presetStandard").addEventListener("click", function(){ applyPreset("standard"); });
+document.getElementById("presetPuyo").addEventListener("click", function(){ applyPreset("puyo"); });
+function helpLine(){
+  function f(a){ return bindings[a].map(fmtCode).join("/"); }
+  return "ガイドライン準拠のエンドレスモードです。<br>" + f("left") + f("right") + " 移動 / " + f("rotR") + " 回転 / " + f("hard") + " ハードドロップ / " + f("hold") + " ホールド<br>キーは右の「キー設定」から変更できます。";
+}
+
+/* ============================================================
    入力: DAS / ARR
    ============================================================ */
 var DAS = 130, ARR = 25;
 var keyState = { left:false, right:false, down:false };
 var dasDir = 0, dasStart = 0, lastArr = 0, dasCharged = false;
 document.addEventListener("keydown", function(e){
-  if(e.repeat){ if(["ArrowLeft","ArrowRight","ArrowDown","ArrowUp","Space"].includes(e.code)) e.preventDefault(); return; }
-  switch(e.code){
-    case "ArrowLeft": e.preventDefault(); keyState.left = true; dasDir = -1; dasStart = performance.now(); dasCharged = false; if(G) tryMove(G,-1); break;
-    case "ArrowRight": e.preventDefault(); keyState.right = true; dasDir = 1; dasStart = performance.now(); dasCharged = false; if(G) tryMove(G,1); break;
-    case "ArrowDown": e.preventDefault(); keyState.down = true; break;
-    case "ArrowUp": case "KeyX": e.preventDefault(); if(G) tryRotate(G, 1); drawAll(); break;
-    case "KeyZ": e.preventDefault(); if(G) tryRotate(G, -1); drawAll(); break;
-    case "Space": e.preventDefault(); if(G){ hardDrop(G); drawAll(); } break;
-    case "KeyC": if(G){ doHold(G); drawAll(); } break;
-    case "KeyP": togglePause(); break;
-    case "KeyR": startCurrent(); break;
+  if(capturingAction){
+    e.preventDefault();
+    if(e.code === "ShiftLeft" || e.code === "ShiftRight" || e.code === "ControlLeft" || e.code === "ControlRight" || e.code === "AltLeft" || e.code === "AltRight" || e.code === "MetaLeft" || e.code === "MetaRight") return;
+    assignKey(capturingAction, e.code);
+    return;
+  }
+  var act = actionForCode(e.code);
+  if(!act) return;
+  if(["left","right","down","rotR","rotL","hard"].indexOf(act) >= 0) e.preventDefault();
+  if(e.repeat){ return; }
+  switch(act){
+    case "left": keyState.left = true; dasDir = -1; dasStart = performance.now(); dasCharged = false; if(G) tryMove(G,-1); break;
+    case "right": keyState.right = true; dasDir = 1; dasStart = performance.now(); dasCharged = false; if(G) tryMove(G,1); break;
+    case "down": keyState.down = true; break;
+    case "rotR": if(G) tryRotate(G, 1); drawAll(); break;
+    case "rotL": if(G) tryRotate(G, -1); drawAll(); break;
+    case "hard": if(G){ hardDrop(G); drawAll(); } break;
+    case "hold": if(G){ doHold(G); drawAll(); } break;
+    case "pause": togglePause(); break;
+    case "restart": startCurrent(); break;
   }
 });
 document.addEventListener("keyup", function(e){
-  if(e.code === "ArrowLeft"){ keyState.left = false; if(dasDir === -1){ dasDir = keyState.right ? 1 : 0; dasStart = performance.now(); dasCharged = false; if(dasDir && G) tryMove(G, dasDir); } }
-  if(e.code === "ArrowRight"){ keyState.right = false; if(dasDir === 1){ dasDir = keyState.left ? -1 : 0; dasStart = performance.now(); dasCharged = false; if(dasDir && G) tryMove(G, dasDir); } }
-  if(e.code === "ArrowDown"){ keyState.down = false; }
+  if(capturingAction) return;
+  var act = actionForCode(e.code);
+  if(act === "left"){ keyState.left = false; if(dasDir === -1){ dasDir = keyState.right ? 1 : 0; dasStart = performance.now(); dasCharged = false; if(dasDir && G) tryMove(G, dasDir); } }
+  if(act === "right"){ keyState.right = false; if(dasDir === 1){ dasDir = keyState.left ? -1 : 0; dasStart = performance.now(); dasCharged = false; if(dasDir && G) tryMove(G, dasDir); } }
+  if(act === "down"){ keyState.down = false; }
 });
 function applyDAS(now){
   if(!G || !dasDir || G.paused || G.over || G.finished || !G.cur) return;
@@ -884,20 +1120,203 @@ document.querySelectorAll(".tbtn").forEach(function(btn){
 });
 
 /* ============================================================
+   ゲームパッド（Web Gamepad API）
+   マッピング定数はすべて GAMEPAD_MAP に集約。
+   実機の個体差・ブラウザ差でズレる場合はここだけ調整する。
+   ============================================================ */
+var GAMEPAD_MAP = {
+  /* Gamepad standard mapping のボタン番号 */
+  BTN: { B:0, A:1, Y:2, X:3, L:4, R:5, ZL:6, ZR:7, MINUS:8, PLUS:9, LSTICK:10, RSTICK:11, DPAD_UP:12, DPAD_DOWN:13, DPAD_LEFT:14, DPAD_RIGHT:15, HOME:16 },
+  AXIS: { LX:0, LY:1, RX:2, RY:3 },   /* 左スティック = axes[0..1] */
+  DEADZONE: 0.5,                       /* スティックを方向入力とみなすしきい値 */
+  /* 両手持ち（Proコン / Joy-Conペア）: BTN の名前で割り当て */
+  DUAL: {
+    rotR: "A",          /* buttons[1] 右回転 */
+    rotL: "B",          /* buttons[0] 左回転 */
+    hold: ["L","R","ZL","ZR"], /* buttons[4..7] ホールド */
+    pause: "PLUS"       /* buttons[9] 一時停止 */
+  },
+  /* Joy-Con 1本・横持ち: フェイスボタンを「位置」で判定する。
+     値はボタン番号。右位置＝右回転 / 下位置＝左回転 / 上位置＝ホールド。
+     R は Pro 配置（右=A[1] 下=B[0] 上=X[3] 左=Y[2]）、
+     L は本体を90°回して持つためダイヤモンドが1つ回転する前提でずらしてある。 */
+  SINGLE_FACE: {
+    R: { right:1, down:0, up:3, left:2 },
+    L: { right:0, down:2, up:1, left:3 }
+  },
+  SINGLE_HOLD_EXTRA: [4, 5],  /* SL / SR もホールド可（横持ち時の肩ボタン） */
+  SINGLE_PAUSE: [8, 9],       /* − / ＋ があれば一時停止 */
+  /* 横持ちのスティック軸補正: 横持ちではスティック軸が90°回転して報告される。
+     画面基準の (x, y) を、報告 axes のどちらから・どの符号で作るかを L/R 別に定義。
+     R: 右に倒す＝報告の -Y 方向、L: その逆回転。 */
+  SINGLE_AXIS: {
+    R: { xFrom:"LY", xSign:-1, yFrom:"LX", ySign: 1 },
+    L: { xFrom:"LY", xSign: 1, yFrom:"LX", ySign:-1 }
+  }
+};
+var LS_PAD = "tetris-trainer-gamepad-v1";
+function loadPadSettings(){
+  try{
+    var raw = localStorage.getItem(LS_PAD);
+    if(raw){ var p = JSON.parse(raw); if(p && (p.side === "L" || p.side === "R")) return { horizontal: !!p.horizontal, side: p.side }; }
+  }catch(e){}
+  return { horizontal: false, side: "R" };
+}
+var padSettings = loadPadSettings();
+function savePadSettings(){
+  try{ localStorage.setItem(LS_PAD, JSON.stringify(padSettings)); }catch(e){}
+}
+var padPrevButtons = [];   /* エッジ検出用: 前フレームのボタン状態 */
+var padDir = 0;            /* パッド由来の左右方向 (-1/0/1) */
+var padDown = false;       /* パッド由来のソフトドロップ */
+var padUpHeld = false;     /* ハードドロップのエッジ検出用 */
+var padDasStart = 0, padDasCharged = false, padLastArr = 0;
+var padStatusCache = "";
+function setPadStatus(text, connected){
+  if(text === padStatusCache) return;
+  padStatusCache = text;
+  var el = document.getElementById("padStatus"), dot = document.getElementById("padDot");
+  if(el) el.textContent = text;
+  if(dot) dot.classList.toggle("on", !!connected);
+}
+window.addEventListener("gamepadconnected", function(e){
+  setPadStatus("接続中：" + e.gamepad.id, true);
+});
+window.addEventListener("gamepaddisconnected", function(){
+  padPrevButtons = []; padDir = 0; padDown = false; padUpHeld = false;
+  setPadStatus("未接続", false);
+});
+function renderPadConfig(){
+  var dual = document.getElementById("padModeDual"), single = document.getElementById("padModeSingle");
+  var row = document.getElementById("padSideRow");
+  var bl = document.getElementById("padSideL"), br = document.getElementById("padSideR");
+  var help = document.getElementById("padHelp");
+  if(dual) dual.classList.toggle("active", !padSettings.horizontal);
+  if(single) single.classList.toggle("active", padSettings.horizontal);
+  if(row) row.style.display = padSettings.horizontal ? "" : "none";
+  if(bl) bl.classList.toggle("active", padSettings.side === "L");
+  if(br) br.classList.toggle("active", padSettings.side === "R");
+  if(help){
+    if(!padSettings.horizontal){
+      help.innerHTML =
+        "<b>両手持ちの割り当て</b><br>" +
+        "左スティック / 十字キー：移動（上＝ハードドロップ、下＝ソフトドロップ）<br>" +
+        "A：右回転　B：左回転<br>" +
+        "L / R / ZL / ZR：ホールド　＋：一時停止<br>" +
+        "移動の長押しには DAS/ARR 相当のリピートがかかります。";
+    } else {
+      help.innerHTML =
+        "<b>横持ち（Joy-Con " + padSettings.side + " 1本）の割り当て</b><br>" +
+        "スティック：移動（横持ち画面基準に90°補正済み／上＝ハードドロップ、下＝ソフトドロップ）<br>" +
+        "フェイスボタン 右位置：右回転　下位置：左回転　上位置：ホールド<br>" +
+        "SL / SR：ホールド<br>" +
+        "キーボードの「ぷよテト横持ち風」と同じ思想（左＝スティック、右＝ボタンダイヤモンド）で統一しています。";
+    }
+  }
+}
+document.getElementById("padModeDual").addEventListener("click", function(){ padSettings.horizontal = false; savePadSettings(); renderPadConfig(); });
+document.getElementById("padModeSingle").addEventListener("click", function(){ padSettings.horizontal = true; savePadSettings(); renderPadConfig(); });
+document.getElementById("padSideL").addEventListener("click", function(){ padSettings.side = "L"; savePadSettings(); renderPadConfig(); });
+document.getElementById("padSideR").addEventListener("click", function(){ padSettings.side = "R"; savePadSettings(); renderPadConfig(); });
+
+function padBtn(gp, idx){ return !!(gp.buttons[idx] && gp.buttons[idx].pressed); }
+function pollGamepad(now){
+  if(!navigator.getGamepads){ setPadStatus("このブラウザは Gamepad API 非対応です", false); return; }
+  var pads = navigator.getGamepads();
+  var gp = null;
+  for(var i=0;i<pads.length;i++){ if(pads[i] && pads[i].connected){ gp = pads[i]; break; } }
+  if(!gp){ setPadStatus("未接続", false); if(padDir || padDown){ padDir = 0; padDown = false; } return; }
+  setPadStatus("接続中：" + gp.id, true);
+  if(capturingAction) return; /* キー入力待ち中はパッドをゲームに流さない */
+
+  var B = GAMEPAD_MAP.BTN, DZ = GAMEPAD_MAP.DEADZONE;
+  var lx = gp.axes[GAMEPAD_MAP.AXIS.LX] || 0, ly = gp.axes[GAMEPAD_MAP.AXIS.LY] || 0;
+  var leftOn, rightOn, downOn, upOn;
+  var edgeActions = []; /* このフレームで立ち上がったアクション */
+
+  function edge(idx, action){
+    var nowOn = padBtn(gp, idx), wasOn = !!padPrevButtons[idx];
+    if(nowOn && !wasOn) edgeActions.push(action);
+  }
+
+  if(!padSettings.horizontal){
+    /* ---- 両手持ち ---- */
+    leftOn  = padBtn(gp, B.DPAD_LEFT)  || lx < -DZ;
+    rightOn = padBtn(gp, B.DPAD_RIGHT) || lx >  DZ;
+    downOn  = padBtn(gp, B.DPAD_DOWN)  || ly >  DZ;
+    upOn    = padBtn(gp, B.DPAD_UP)    || ly < -DZ;
+    edge(GAMEPAD_MAP.BTN[GAMEPAD_MAP.DUAL.rotR], "rotR");
+    edge(GAMEPAD_MAP.BTN[GAMEPAD_MAP.DUAL.rotL], "rotL");
+    GAMEPAD_MAP.DUAL.hold.forEach(function(nm){ edge(GAMEPAD_MAP.BTN[nm], "hold"); });
+    edge(GAMEPAD_MAP.BTN[GAMEPAD_MAP.DUAL.pause], "pause");
+  } else {
+    /* ---- Joy-Con 1本・横持ち: スティック軸を画面基準へ補正 ---- */
+    var tr = GAMEPAD_MAP.SINGLE_AXIS[padSettings.side];
+    var raw = { LX: lx, LY: ly };
+    var sx = raw[tr.xFrom] * tr.xSign, sy = raw[tr.yFrom] * tr.ySign;
+    leftOn = sx < -DZ; rightOn = sx > DZ; downOn = sy > DZ; upOn = sy < -DZ;
+    var face = GAMEPAD_MAP.SINGLE_FACE[padSettings.side];
+    edge(face.right, "rotR");
+    edge(face.down, "rotL");
+    edge(face.up, "hold");
+    GAMEPAD_MAP.SINGLE_HOLD_EXTRA.forEach(function(idx){ edge(idx, "hold"); });
+    GAMEPAD_MAP.SINGLE_PAUSE.forEach(function(idx){ edge(idx, "pause"); });
+  }
+
+  /* 左右: 方向が変わった瞬間に1マス動かし、DAS/ARR は applyPadDAS が継続する */
+  var dir = leftOn && !rightOn ? -1 : rightOn && !leftOn ? 1 : 0;
+  if(dir !== padDir){
+    padDir = dir;
+    if(dir !== 0){
+      padDasStart = now; padDasCharged = false;
+      if(G && tryMove(G, dir)) drawAll();
+    }
+  }
+  padDown = !!downOn;
+  /* スティック上 / 十字上はエッジ検出でハードドロップ（長押しで連射しない） */
+  if(upOn && !padUpHeld){ if(G){ hardDrop(G); drawAll(); } }
+  padUpHeld = !!upOn;
+
+  /* ボタン: エッジ検出（押した瞬間のみ） */
+  var fired = {};
+  edgeActions.forEach(function(a){
+    if(fired[a]) return; fired[a] = true;
+    if(!G) return;
+    if(a === "rotR"){ tryRotate(G, 1); drawAll(); }
+    else if(a === "rotL"){ tryRotate(G, -1); drawAll(); }
+    else if(a === "hold"){ doHold(G); drawAll(); }
+    else if(a === "pause"){ togglePause(); }
+  });
+
+  padPrevButtons = gp.buttons.map(function(b){ return !!b.pressed; });
+}
+function applyPadDAS(now){
+  if(!G || !padDir || G.paused || G.over || G.finished || !G.cur) return;
+  if(!padDasCharged){
+    if(now - padDasStart >= DAS){ padDasCharged = true; padLastArr = now; if(tryMove(G, padDir)) drawAll(); }
+  } else if(now - padLastArr >= ARR){
+    padLastArr = now; if(tryMove(G, padDir)) drawAll();
+  }
+}
+
+/* ============================================================
    メインループ（重力＋ロックディレイ）
    ============================================================ */
 var lastFrame = performance.now();
 function loop(now){
   var dt = Math.min(100, now - lastFrame); lastFrame = now;
+  pollGamepad(now);
   if(G && G.running && !G.paused && !G.over && !G.finished && G.cur){
     applyDAS(now);
+    applyPadDAS(now);
+    var softHeld = keyState.down || padDown;
     var interval = (mode === "free") ? gravityMs(G.level) : 900;
-    if(keyState.down) interval = Math.min(interval, 30);
+    if(softHeld) interval = Math.min(interval, 30);
     G.dropAcc += dt;
-    var stepMs = keyState.down ? 30 : interval;
+    var stepMs = softHeld ? 30 : interval;
     while(G.dropAcc >= stepMs){
       G.dropAcc -= stepMs;
-      if(softStep(G)){ if(keyState.down && mode === "free") G.score += 1; }
+      if(softStep(G)){ if(softHeld && mode === "free") G.score += 1; }
       else break;
     }
     G.grounded = collide(G, G.cur.type, G.cur.rot, G.cur.x, G.cur.y+1);
@@ -1032,7 +1451,7 @@ function startCurrent(){
   } else if(mode === "skill"){
     startSkillIntro(); return;
   }
-  keyState.left = keyState.right = keyState.down = false; dasDir = 0;
+  keyState.left = keyState.right = keyState.down = false; dasDir = 0; padDir = 0; padDown = false;
   drawAll(); updateStats();
 }
 function gameOver(){
@@ -1042,7 +1461,7 @@ function gameOver(){
   if(mode === "free"){
     showOverlay("GAME OVER",
       "スコア <b>" + G.score.toLocaleString() + "</b>／" + G.lines + "ライン／" + G.pieces + "ピース<br>タイム " + fmtTime(G.endStamp - G.startStamp),
-      "もう一度 (R)", function(){ startCurrent(); });
+      "もう一度 (" + fmtCode(bindings.restart[0]) + ")", function(){ startCurrent(); });
   } else {
     // テンプレ中に天井到達 = その時点の配置で判定
     finishTrain();
@@ -1052,7 +1471,7 @@ function togglePause(){
   if(!G || G.over || G.finished) return;
   G.paused = !G.paused;
   if(G.paused){
-    showOverlay("一時停止中", "Pキーまたはボタンで再開します。", "再開する", function(){ togglePause(); });
+    showOverlay("一時停止中", fmtCode(bindings.pause[0]) + "キー／パッドの＋ボタン、またはボタンで再開します。", "再開する", function(){ togglePause(); });
   } else hideOverlay();
 }
 $("pauseBtn").addEventListener("click", togglePause);
@@ -1227,10 +1646,12 @@ document.querySelectorAll("nav.modes button").forEach(function(b){
 /* init */
 renderTplList();
 renderTplDesc();
+renderKeyConfig();
+renderPadConfig();
 $("modeNote").innerHTML = MODE_NOTES.free;
 G = makeGame({}); G.running = false; spawn(G);
 drawAll(); updateStats();
-showOverlay("フリープレイ", "ガイドライン準拠のエンドレスモードです。<br>←→移動 / ↑回転 / Space ハードドロップ / C ホールド", "スタート", function(){ hideOverlay(); if(G){ G.running = true; G.startTime = performance.now(); G.startStamp = G.startTime; } });
+showOverlay("フリープレイ", helpLine(), "スタート", function(){ hideOverlay(); if(G){ G.running = true; G.startTime = performance.now(); G.startStamp = G.startTime; } });
 </script>
 </body>
 </html>
