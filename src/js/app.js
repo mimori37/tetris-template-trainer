@@ -102,7 +102,8 @@ function renderTplDesc(){
 var MODE_NOTES = {
   free: "通常のエンドレスモード。10ラインごとにレベルが上がり、落下速度が速くなります。Tスピン・コンボ・B2B・パーフェクトクリアも採点されます。",
   train: "選んだテンプレの<b>目標シルエット</b>が盤面に薄く表示されます。出現順どおりに1巡目（7ピース）を置き切りると、目標28セルとの一致率・所要時間・PPS・置きミスを判定します。ライン消去は止めてあるので、形づくりに集中できます。",
-  skill: "ランダムなテンプレ<b>3題</b>を連続で出題し、精度・速度・ミス率・ホールド活用を総合採点して S〜D ランクと講評を出します。まずはテンプレ練習で各形を覚えてから挑戦を。"
+  skill: "ランダムなテンプレ<b>3題</b>を連続で出題し、精度・速度・ミス率・ホールド活用を総合採点して S〜D ランクと講評を出します。まずはテンプレ練習で各形を覚えてから挑戦を。",
+  ghost: "選んだテンプレを<b>AIゴーストと同時に</b>積みます。AIは約9.5秒で正解配置を完成させるペースで並走します。先に置き切って、一致率でも負けないのが目標です。"
 };
 function setMode(m){
   mode = m;
@@ -110,6 +111,7 @@ function setMode(m){
     b.classList.toggle("active", b.getAttribute("data-mode") === m);
   });
   $("modeNote").innerHTML = MODE_NOTES[m];
+  $("ghostPanel").hidden = m !== "ghost";
   $("challengeBar").classList.remove("show");
   hideResult();
   if(m === "skill"){ startSkillIntro(); }
@@ -133,6 +135,7 @@ function hideOverlay(){ $("overlay").classList.remove("show"); }
    ゲーム開始系
    ============================================================ */
 function startCurrent(){
+  stopGhostAi();
   hideResult();
   $("challengeBar").classList.remove("show");
   if(mode === "free"){
@@ -140,12 +143,13 @@ function startCurrent(){
     G.running = true;
     hideOverlay();
     spawn(G);
-  } else if(mode === "train"){
+  } else if(mode === "train" || mode === "ghost"){
     G = makeGame({ queue: selectedTpl.seq.slice(), noClear: true, target: selectedTpl });
     G.running = true;
     hideOverlay();
     spawn(G);
     $("trainStats").innerHTML = '<div class="modeNote">課題：<b style="color:var(--text)">' + selectedTpl.name + '</b>／7ピースを置き切ると判定します。</div>';
+    if(mode === "ghost") startGhostAi(selectedTpl);
   } else if(mode === "skill"){
     startSkillIntro(); return;
   }
@@ -200,9 +204,17 @@ function finishTrain(){
   var r = judge(G);
   drawAll(); updateStats();
   if(mode === "skill"){ onSkillChallengeDone(r); return; }
-  if(mode === "train" && G.target){
+  if((mode === "train" || mode === "ghost") && G.target){
     var best = loadBest();
     if(!best[G.target.id] || r.acc > best[G.target.id]){ best[G.target.id] = r.acc; saveBest(best); }
+  }
+  var ghostLine = "";
+  if(mode === "ghost" && ghostAi){
+    var aiMs = ghostAi.doneAt() ? ghostAi.doneAt() - ghostAi.startStamp : null;
+    ghostLine = (aiMs == null || r.ms <= aiMs)
+      ? "🏆 AIゴーストに勝利！（あなた " + fmtTime(r.ms) + (aiMs != null ? " ／ AI " + fmtTime(aiMs) : " ／ AIは未完成") + "）"
+      : "AIゴーストの勝ち（AI " + fmtTime(aiMs) + " ／ あなた " + fmtTime(r.ms) + "）。あと少しで届きます。";
+    stopGhostAi();
   }
   var comment =
     r.acc >= 95 ? "ほぼ完璧な再現です。この形は身体に入っています。" :
@@ -218,7 +230,7 @@ function finishTrain(){
       barRow("PPS", r.pps.toFixed(2), Math.min(100, Math.round(r.pps/1.2*100))) +
       barRow("置きミス", r.miss + " セル", Math.max(0, 100 - r.miss*8)) +
     '</div></div>' +
-    '<p class="comment">' + comment + '<br><span style="color:var(--muted);font-size:12.5px">緑＝目標どおりのセル／赤＝目標外に置いたセル／赤破線＝置けなかった目標セル。ホールド使用：' + r.holds + '回</span></p>',
+    '<p class="comment">' + (ghostLine ? "<b>" + ghostLine + "</b><br>" : "") + comment + '<br><span style="color:var(--muted);font-size:12.5px">緑＝目標どおりのセル／赤＝目標外に置いたセル／赤破線＝置けなかった目標セル。ホールド使用：' + r.holds + '回</span></p>',
     [
       { label: "もう一度挑戦 (R)", fn: function(){ startCurrent(); }, primary: true },
       { label: "テンプレ図鑑で選ぶ", fn: function(){ hideResult(); switchView("roadmap"); } }
@@ -397,17 +409,325 @@ function renderRoadmap(){
     var fig = document.createElement("canvas");
     fig.className = "roadFig";
     card.appendChild(fig);
+    var btns = document.createElement("div");
+    btns.className = "roadBtns";
     var btn = document.createElement("button");
     btn.type = "button"; btn.className = "roadBtn"; btn.textContent = "このテンプレで練習する";
     btn.addEventListener("click", function(){
       selectedTpl = t; renderTplList(); renderTplDesc();
       switchView("play"); setMode("train");
     });
-    card.appendChild(btn);
+    btns.appendChild(btn);
+    var demoBtn = document.createElement("button");
+    demoBtn.type = "button"; demoBtn.className = "roadBtn sub"; demoBtn.textContent = "お手本を見る";
+    demoBtn.addEventListener("click", function(){ openDemo(t); });
+    btns.appendChild(demoBtn);
+    card.appendChild(btns);
     wrap.appendChild(card);
     drawRoadFig(fig, t);
   });
 }
+
+/* ============================================================
+   AIプレイヤー（お手本デモ / ゴースト戦）
+   テンプレの正解配置データから (回転, x) の手順を逆算し、
+   実際のエンジン関数で1手ずつ実行する。
+   ============================================================ */
+function solveTemplate(t){
+  var N = t.seq.length;
+  function tryPlace(grid, idx){
+    var type = t.seq[idx];
+    var target = {};
+    t.placements[idx].forEach(function(c){ target[c[0] + "," + (c[1] + HIDDEN)] = 1; });
+    var actions = solvePiece(grid, type, target);
+    if(!actions) return null;
+    var g2 = grid.map(function(r){ return r.slice(); });
+    var st = { grid: g2, cur: { type: type, rot: 0, x: 3, y: HIDDEN - 2 }, paused: false, over: false, finished: false, grounded: false, lockAcc: 0, lockResets: 0, lastRotate: false, lastKickIdx: 0 };
+    if(collide(st, type, 0, st.cur.x, st.cur.y)) st.cur.y -= 1;
+    actions.forEach(function(a){
+      if(a === "left") tryMove(st, -1);
+      else if(a === "right") tryMove(st, 1);
+      else if(a === "rotR") tryRotate(st, 1);
+      else if(a === "rotL") tryRotate(st, -1);
+      else if(a === "rot180") tryRotate180(st);
+      else if(a === "down"){ if(!collide(st, type, st.cur.rot, st.cur.x, st.cur.y + 1)) st.cur.y++; }
+    });
+    cellsOf(type, st.cur.rot, st.cur.x, st.cur.y).forEach(function(c){ g2[c[1]][c[0]] = type; });
+    return { actions: actions, grid: g2 };
+  }
+  function dfs(grid, queue, current, held, canHold, plan){
+    if(plan.filter(function(e){ return !e.hold; }).length === N) return plan;
+    var placed = tryPlace(grid, current);
+    if(placed){
+      var next = queue.length ? queue[0] : held;
+      var rest = queue.length ? queue.slice(1) : [];
+      var heldAfter = queue.length ? held : null;
+      var plan2 = plan.concat([{ idx: current, actions: placed.actions }]);
+      if(next == null){
+        if(plan2.filter(function(e){ return !e.hold; }).length === N) return plan2;
+      } else {
+        var r = dfs(placed.grid, rest, next, heldAfter, true, plan2);
+        if(r) return r;
+      }
+    }
+    if(canHold && queue.length){
+      if(held != null){
+        var r2 = dfs(grid, queue, held, current, false, plan.concat([{ hold: true }]));
+        if(r2) return r2;
+      } else if(queue.length){
+        var r3 = dfs(grid, queue.slice(1), queue[0], current, false, plan.concat([{ hold: true }]));
+        if(r3) return r3;
+      }
+    }
+    return null;
+  }
+  var queue = [];
+  for(var i=1;i<N;i++) queue.push(i);
+  return dfs(emptyGrid(), queue, 0, null, true, []);
+}
+function solvePiece(grid, type, target){
+  var gridRef = { grid: grid };
+  function scratch(x, y, r){
+    return { grid: grid, cur: { type: type, rot: r, x: x, y: y }, paused: false, over: false, finished: false, grounded: false, lockAcc: 0, lockResets: 0, lastRotate: false, lastKickIdx: 0 };
+  }
+  function isGoal(x, y, r){
+    var cs = cellsOf(type, r, x, y);
+    for(var j=0;j<cs.length;j++){ if(!target[cs[j][0] + "," + cs[j][1]]) return false; }
+    return collide(gridRef, type, r, x, y + 1);
+  }
+  var startY = HIDDEN - 2;
+  if(collide(gridRef, type, 0, 3, startY)) startY -= 1;
+  var q = [{ x: 3, y: startY, r: 0, path: [] }];
+  var seen = {}; seen["3," + startY + ",0"] = 1;
+  while(q.length){
+    var n = q.shift();
+    if(isGoal(n.x, n.y, n.r)) return n.path;
+    if(n.path.length > 70) continue;
+    var cand = [];
+    var s1 = scratch(n.x, n.y, n.r); tryMove(s1, -1); if(s1.cur.x !== n.x) cand.push({ x: s1.cur.x, y: s1.cur.y, r: s1.cur.rot, a: "left" });
+    var s2 = scratch(n.x, n.y, n.r); tryMove(s2, 1); if(s2.cur.x !== n.x) cand.push({ x: s2.cur.x, y: s2.cur.y, r: s2.cur.rot, a: "right" });
+    var s3 = scratch(n.x, n.y, n.r); tryRotate(s3, 1); if(s3.cur.rot !== n.r || s3.cur.x !== n.x || s3.cur.y !== n.y) cand.push({ x: s3.cur.x, y: s3.cur.y, r: s3.cur.rot, a: "rotR" });
+    var s4 = scratch(n.x, n.y, n.r); tryRotate(s4, -1); if(s4.cur.rot !== n.r || s4.cur.x !== n.x || s4.cur.y !== n.y) cand.push({ x: s4.cur.x, y: s4.cur.y, r: s4.cur.rot, a: "rotL" });
+    var s5 = scratch(n.x, n.y, n.r); tryRotate180(s5); if(s5.cur.rot !== n.r || s5.cur.x !== n.x || s5.cur.y !== n.y) cand.push({ x: s5.cur.x, y: s5.cur.y, r: s5.cur.rot, a: "rot180" });
+    if(!collide(gridRef, type, n.r, n.x, n.y + 1)) cand.push({ x: n.x, y: n.y + 1, r: n.r, a: "down" });
+    for(var k=0;k<cand.length;k++){
+      var c = cand[k], kk = c.x + "," + c.y + "," + c.r;
+      if(seen[kk]) continue;
+      seen[kk] = 1;
+      q.push({ x: c.x, y: c.y, r: c.r, path: n.path.concat([c.a]) });
+    }
+  }
+  return null;
+}
+function drawAiBoard(cv, g){
+  if(!cv || !g) return;
+  var ctx = cv.getContext("2d");
+  var cell = cv.width / COLS;
+  ctx.fillStyle = cssVar("--board-bg"); ctx.fillRect(0, 0, cv.width, cv.height);
+  if(g.target){
+    ctx.fillStyle = cssVar("--guide-fill");
+    g.target.targetSet.forEach(function(k){
+      var p = k.split(","); var gx = +p[0], gy = +p[1];
+      if(!(g.grid[gy+HIDDEN] && g.grid[gy+HIDDEN][gx])) ctx.fillRect(gx*cell+1, gy*cell+1, cell-2, cell-2);
+    });
+  }
+  for(var ry=HIDDEN; ry<ROWS; ry++){
+    for(var x=0; x<COLS; x++){
+      var v = g.grid[ry][x];
+      if(v) drawCell(ctx, x, ry-HIDDEN, cell, COLORS[v], 1);
+    }
+  }
+  if(g.cur){
+    cellsOf(g.cur.type, g.cur.rot, g.cur.x, g.cur.y).forEach(function(c){
+      if(c[1] >= HIDDEN) drawCell(ctx, c[0], c[1]-HIDDEN, cell, COLORS[g.cur.type], 1);
+    });
+  }
+}
+function createAiRunner(t, cv, opts){
+  var plan = solveTemplate(t);
+  /* 終端で spawn が全体の finishTrain を呼ばないよう、予備ピースを1つ足す */
+  var g = makeGame({ queue: t.seq.concat(["T"]), noClear: true, target: t });
+  g.running = true;
+  spawn(g);
+  var idx = 0, actIdx = 0, placedCount = 0, timer = null, done = false, doneAt = null;
+  function draw(){ drawAiBoard(cv, g); if(opts.onProgress) opts.onProgress(placedCount, t.seq.length, done); }
+  function step(){
+    if(!plan || idx >= plan.length){ finish(); return; }
+    var p = plan[idx];
+    if(p.hold){ doHold(g); idx++; draw(); return; }
+    if(actIdx < p.actions.length){
+      var a = p.actions[actIdx++];
+      if(a === "left") tryMove(g, -1);
+      else if(a === "right") tryMove(g, 1);
+      else if(a === "rotR") tryRotate(g, 1);
+      else if(a === "rotL") tryRotate(g, -1);
+      else if(a === "rot180") tryRotate180(g);
+      else if(a === "down"){ if(!collide(g, g.cur.type, g.cur.rot, g.cur.x, g.cur.y + 1)) g.cur.y++; }
+      draw();
+      return;
+    }
+    hardDrop(g); idx++; actIdx = 0; placedCount++; draw();
+    if(placedCount >= t.seq.length) finish();
+  }
+  function finish(){
+    if(done) return;
+    done = true; doneAt = performance.now(); stop();
+    draw();
+    if(opts.onDone) opts.onDone();
+  }
+  function start(){ if(!timer && !done) timer = setInterval(step, opts.stepMs); }
+  function stop(){ if(timer){ clearInterval(timer); timer = null; } }
+  draw();
+  return {
+    start: start, stop: stop, game: g, placed: function(){ return placedCount; },
+    isDone: function(){ return done; }, doneAt: function(){ return doneAt; },
+    startStamp: 0
+  };
+}
+
+/* ---- お手本デモ ---- */
+var demoRunner = null, demoTimer = null, demoTpl = null, demoSpeed = 105;
+function stopDemo(){
+  if(demoRunner){ demoRunner.stop(); demoRunner = null; }
+  if(demoTimer){ clearTimeout(demoTimer); demoTimer = null; }
+}
+function launchDemo(){
+  stopDemo();
+  if(!demoTpl) return;
+  demoRunner = createAiRunner(demoTpl, $("demoCv"), {
+    stepMs: demoSpeed,
+    onDone: function(){
+      demoTimer = setTimeout(function(){ if($("demoModal").classList.contains("show")) launchDemo(); }, 1300);
+    }
+  });
+  demoRunner.start();
+}
+function openDemo(t){
+  demoTpl = t;
+  selectedTpl = t; renderTplList(); renderTplDesc();
+  $("demoTitle").textContent = "お手本デモ：" + t.name;
+  $("demoModal").classList.add("show");
+  launchDemo();
+}
+function closeDemo(){
+  stopDemo();
+  $("demoModal").classList.remove("show");
+}
+document.querySelectorAll("[data-demo-speed]").forEach(function(b){
+  b.addEventListener("click", function(){ demoSpeed = +b.getAttribute("data-demo-speed"); launchDemo(); });
+});
+$("demoCloseBtn").addEventListener("click", closeDemo);
+$("demoPracticeBtn").addEventListener("click", function(){
+  var t = demoTpl;
+  closeDemo();
+  if(t){ selectedTpl = t; renderTplList(); renderTplDesc(); switchView("play"); setMode("train"); }
+});
+
+/* ---- ゴースト戦 ---- */
+var ghostAi = null;
+function stopGhostAi(){
+  if(ghostAi){ ghostAi.stop(); ghostAi = null; }
+}
+function startGhostAi(t){
+  stopGhostAi();
+  var cv = $("ghostCv");
+  var plan = solveTemplate(t);
+  var totalSteps = 20;
+  if(plan){
+    totalSteps = 0;
+    plan.forEach(function(p){ totalSteps += p.hold ? 1 : p.actions.length + 1; });
+  }
+  var stepMs = Math.max(45, Math.round(9500 / totalSteps));
+  ghostAi = createAiRunner(t, cv, {
+    stepMs: stepMs,
+    onProgress: function(n, total, done){
+      var el = $("ghostStatus");
+      if(el) el.textContent = done ? "AIは完成しました。あなたの判定は置き切った時点で行われます" : ("AI進捗：" + n + " / " + total + " ピース");
+    },
+    onDone: function(){
+      var el = $("ghostStatus");
+      if(el) el.textContent = "AIが先に完成！ 判定はあなたが置き切った時点で行われます";
+    }
+  });
+  ghostAi.startStamp = performance.now();
+  ghostAi.start();
+}
+
+/* ============================================================
+   記録の引き継ぎ（サーバーなし：データをリンク自体に埋め込む）
+   ============================================================ */
+function b64encode(str){
+  var bytes = new TextEncoder().encode(str);
+  var bin = "";
+  bytes.forEach(function(b){ bin += String.fromCharCode(b); });
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+function b64decode(s){
+  s = s.replace(/-/g, "+").replace(/_/g, "/");
+  while(s.length % 4) s += "=";
+  var bin = atob(s);
+  var bytes = new Uint8Array(bin.length);
+  for(var i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+function buildSyncLink(){
+  var payload = {
+    v: 1,
+    best: loadBest(),
+    key: { bindings: keyConfig.bindings, preset: activePreset },
+    pad: padSettings,
+    theme: curTheme
+  };
+  return location.origin + location.pathname + "#t=" + b64encode(JSON.stringify(payload));
+}
+function importFromHash(){
+  var m = location.hash.match(/^#t=(.+)$/);
+  if(!m) return false;
+  try{
+    var payload = JSON.parse(b64decode(m[1]));
+    if(payload.best) saveBest(payload.best);
+    if(payload.key && payload.key.bindings){
+      keyConfig = { bindings: payload.key.bindings, preset: payload.key.preset || "custom" };
+      bindings = keyConfig.bindings;
+      activePreset = keyConfig.preset;
+      saveBindings();
+    }
+    if(payload.pad){
+      padSettings = payload.pad;
+      savePadSettings();
+    }
+    if(payload.theme) applyTheme(payload.theme);
+    history.replaceState(null, "", location.pathname);
+    var st = $("syncStatus");
+    if(st) st.textContent = "リンクから記録を取り込みました（キー設定・自己ベスト・テーマ）。";
+    return true;
+  }catch(e){
+    return false;
+  }
+}
+$("syncCopyBtn").addEventListener("click", function(){
+  var link = buildSyncLink();
+  var done = function(){ $("syncStatus").textContent = "引き継ぎリンクをコピーしました。別端末で開くと記録が取り込まれます。"; };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(link).then(done, function(){ window.prompt("このリンクをコピーしてください", link); });
+  } else {
+    window.prompt("このリンクをコピーしてください", link);
+  }
+});
+$("syncQrBtn").addEventListener("click", function(){
+  var box = $("qrBox");
+  if(!box.hidden){ box.hidden = true; return; }
+  try{
+    var qr = qrcode(0, "L");
+    qr.addData(buildSyncLink());
+    qr.make();
+    box.innerHTML = qr.createSvgTag(4, 10) + '<div class="qrCap">スマホのカメラで読み取ると、この端末の記録が取り込まれます</div>';
+    box.hidden = false;
+  }catch(e){
+    $("syncStatus").textContent = "QRコードを作れませんでした（データ量オーバー）。リンクのコピーを使ってください。";
+  }
+});
+
 
 /* ============================================================
    ビュー切替（プレイ / 図鑑 / 設定）
@@ -455,6 +775,7 @@ document.querySelectorAll("nav.modes button").forEach(function(b){
 });
 
 /* init */
+importFromHash();
 applyTheme(curTheme);
 renderTplList();
 renderTplDesc();

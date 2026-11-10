@@ -31,6 +31,7 @@
   <button type="button" data-mode="free" class="active">フリープレイ</button>
   <button type="button" data-mode="train">テンプレ練習</button>
   <button type="button" data-mode="skill">スキルチェック</button>
+  <button type="button" data-mode="ghost">ゴースト戦</button>
 </nav>
 
 <main class="layout" id="viewPlay">
@@ -51,6 +52,10 @@
   <section class="gameCol">
     <div class="quickGuide" id="quickGuide" aria-label="クイック操作ガイド"></div>
     <div class="challengeBar" id="challengeBar"></div>
+    <div id="ghostPanel" hidden>
+      <div class="ghostHead">AIゴースト <span id="ghostStatus">同じテンプレをAIが並走しています</span></div>
+      <canvas id="ghostCv" width="100" height="200"></canvas>
+    </div>
     <div class="gameRow">
       <div class="sideBox">
         <div class="lab">HOLD</div>
@@ -127,9 +132,20 @@
 <section class="pageView" id="viewSettings" hidden>
   <div class="settingsWrap">
     <div class="panel">
+      <h2>記録の引き継ぎ <span class="r">サーバーなし・リンクで渡す</span></h2>
+      <p class="padNote">キー設定・自己ベスト・テーマを、リンク1本に埋め込んで別端末へ引き継げます。リンクを開いた端末に、その時点の記録が取り込まれます（リンクを渡した相手も同じ記録を取り込めるので、渡す相手には注意）。</p>
+      <div class="syncBtns">
+        <button type="button" class="bigBtn" id="syncCopyBtn">引き継ぎリンクをコピー</button>
+        <button type="button" class="bigBtn ghost" id="syncQrBtn">QRコードを表示</button>
+      </div>
+      <div class="syncStatus" id="syncStatus"></div>
+      <div id="qrBox" hidden></div>
+    </div>
+    <div class="panel">
       <h2>キー設定（キーコンフィグ）</h2>
       <div class="presetGrid" id="presetList" role="group" aria-label="環境別キープリセット"></div>
       <div class="presetState" id="presetState"></div>
+      <div id="presetPreview" aria-label="選択中プリセットのイメージ"></div>
       <div id="keyConfigList"></div>
       <div class="keyNotice" id="keyNotice" aria-live="polite"></div>
       <div class="keyHint">行をクリックすると「キー入力待ち」になります。割り当てたいキーを押してください（Escでキャンセル）。すでに使われているキーを選ぶと、元のアクションと自動で入れ替わります。設定はこの端末に保存され、次回もそのまま使えます。</div>
@@ -184,6 +200,24 @@
 <script src="src/js/data.js"></script>
 <script src="src/js/engine.js"></script>
 <script src="src/js/input.js"></script>
+<script src="src/js/qrcode.js"></script>
 <script src="src/js/app.js"></script>
+<div class="startModal" id="demoModal" role="dialog" aria-modal="true" aria-label="お手本デモ">
+  <div class="startCard demoCard">
+    <h2 id="demoTitle">お手本デモ</h2>
+    <p class="startLead">AIが出現順どおりに正解配置へ積みます。回転と移動の順番ごと真似するのが近道です。</p>
+    <canvas id="demoCv" width="150" height="300"></canvas>
+    <div class="startRow"><span>速度</span>
+      <button type="button" class="soundBtn" data-demo-speed="170">ゆっくり</button>
+      <button type="button" class="soundBtn" data-demo-speed="105">ふつう</button>
+      <button type="button" class="soundBtn" data-demo-speed="55">はやい</button>
+    </div>
+    <div class="startBtns">
+      <button type="button" class="bigBtn" id="demoPracticeBtn">このテンプレで練習する</button>
+      <button type="button" class="bigBtn ghost" id="demoCloseBtn">閉じる</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

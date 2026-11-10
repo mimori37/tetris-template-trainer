@@ -289,7 +289,7 @@ function drawBoard(){
   var ec = evalColors();
 
   // guide silhouette (training)
-  if(G.target && (mode==="train" || mode==="skill")){
+  if(G.target && (mode==="train" || mode==="skill" || mode==="ghost")){
     G.target.targetSet.forEach(function(k){
       var parts = k.split(","); var gx=+parts[0], gy=+parts[1];
       var filledHere = G.grid[gy+HIDDEN] && G.grid[gy+HIDDEN][gx];

@@ -284,3 +284,41 @@
   .startBtns{display:grid; gap:8px; margin-top:6px}
   .startBtns .bigBtn{width:100%}
   .skipRow{display:flex; gap:8px; align-items:center; margin-top:14px; font-size:12.5px; color:var(--muted); cursor:pointer}
+
+  /* ---- プリセットのアイコンとプレビュー ---- */
+  .presetCard .pIcon{display:block; margin-bottom:6px; width:52px; height:34px; color:var(--muted)}
+  .presetCard.active .pIcon{color:var(--cyan)}
+  .presetCard .pIcon svg{width:100%; height:100%; display:block}
+  #presetPreview{margin-top:12px; background:var(--panel2); border:1px solid var(--line); border-radius:12px; padding:14px}
+  #presetPreview .pvTitle{font-size:12px; font-weight:900; color:var(--muted); margin-bottom:10px}
+  .pvClusters{display:flex; gap:26px; flex-wrap:wrap}
+  .pvCluster .clLab{font-size:11px; color:var(--faint); font-weight:700; margin-bottom:6px}
+  .pvRow{display:flex; gap:6px; margin-bottom:6px}
+  .capBig{min-width:52px; text-align:center; background:var(--kbd-bg); border:1px solid var(--line); border-bottom-width:3px; border-radius:8px; padding:6px 8px}
+  .capBig .ck{font-family:"IBM Plex Mono",monospace; font-weight:700; font-size:13px; color:var(--text); display:block}
+  .capBig .ca{font-size:10px; color:var(--muted); display:block; margin-top:2px}
+  .capBig.wide{min-width:110px}
+  .pvJoy{display:flex; justify-content:center}
+  .pvJoy svg{width:300px; max-width:100%; height:auto; color:var(--muted)}
+  .pvJoy text{fill:var(--text); font-size:11px; font-weight:700}
+  .pvJoy .sub{fill:var(--muted); font-size:9px; font-weight:400}
+
+  /* ---- 同期 ---- */
+  .syncBtns{display:flex; gap:8px; flex-wrap:wrap}
+  .syncStatus{font-size:12.5px; color:var(--green); margin-top:8px; min-height:1.2em}
+  #qrBox{margin-top:12px; background:#ffffff; border:1px solid var(--line); border-radius:12px; padding:14px; text-align:center}
+  #qrBox svg{width:220px; height:220px}
+  #qrBox .qrCap{color:#5a6a82; font-size:12px; margin-top:8px}
+
+  /* ---- ゴースト戦 ---- */
+  #ghostPanel{margin:0 0 10px; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:10px 12px; display:flex; gap:14px; align-items:center}
+  #ghostPanel[hidden]{display:none}
+  .ghostHead{font-weight:900; font-size:13px}
+  .ghostHead span{display:block; font-weight:400; color:var(--muted); font-size:12px; margin-top:3px}
+  #ghostCv{background:var(--board-bg); border:1px solid var(--line); border-radius:8px; width:75px; height:150px}
+
+  /* ---- お手本デモ ---- */
+  .demoCard{text-align:left}
+  #demoCv{display:block; margin:6px auto 4px; background:var(--board-bg); border:1px solid var(--line); border-radius:10px; width:150px; height:300px}
+  .roadBtns{display:flex; flex-direction:column; gap:6px; flex:none}
+  .roadBtn.sub{background:transparent; color:var(--cyan)}

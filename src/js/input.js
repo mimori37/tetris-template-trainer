@@ -121,6 +121,7 @@ function renderKeyConfig(){
   }
   renderPresetList();
   renderKeysHelp();
+  renderPresetPreview();
 }
 function renderKeysHelp(){
   var el = document.getElementById("keysHelp");
@@ -177,6 +178,55 @@ function assignKey(action, code){
   keyNotice(msg || "「" + ACTIONS[action].label + "」に " + fmtCode(code) + " を割り当てました。");
   renderKeyConfig();
 }
+function presetIcon(name){
+  if(name === "puyo"){
+    return '<svg viewBox="0 0 52 34" aria-hidden="true"><rect x="1.5" y="7" width="49" height="20" rx="10" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="13" cy="17" r="4.6" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="39" cy="11.8" r="2.1" fill="currentColor"/><circle cx="44.2" cy="17" r="2.1" fill="currentColor"/><circle cx="39" cy="22.2" r="2.1" fill="currentColor"/><circle cx="33.8" cy="17" r="2.1" fill="currentColor"/></svg>';
+  }
+  return '<svg viewBox="0 0 52 34" aria-hidden="true"><rect x="1.5" y="4" width="49" height="26" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><g fill="currentColor" opacity="0.55"><rect x="6" y="9" width="6" height="4" rx="1"/><rect x="14" y="9" width="6" height="4" rx="1"/><rect x="22" y="9" width="6" height="4" rx="1"/><rect x="30" y="9" width="6" height="4" rx="1"/><rect x="38" y="9" width="6" height="4" rx="1"/><rect x="6" y="16" width="6" height="4" rx="1"/><rect x="14" y="16" width="6" height="4" rx="1"/><rect x="22" y="16" width="6" height="4" rx="1"/><rect x="30" y="16" width="6" height="4" rx="1"/><rect x="38" y="16" width="6" height="4" rx="1"/><rect x="14" y="23" width="24" height="4" rx="1"/></g></svg>';
+}
+function capBig(action, wide){
+  var code = (bindings[action] || [])[0];
+  return '<div class="capBig' + (wide ? ' wide' : '') + '"><span class="ck">' + (code ? fmtCode(code) : "—") + '</span><span class="ca">' + ACTIONS[action].label + '</span></div>';
+}
+function renderPresetPreview(){
+  var el = document.getElementById("presetPreview");
+  if(!el) return;
+  var p = PRESETS[activePreset];
+  var title = p ? (p.label + "（" + p.env + "）の配置") : "カスタム配置";
+  if(activePreset === "puyo"){
+    function bl(arr){ var code = (arr || [])[0]; return code ? fmtCode(code) : "—"; }
+    el.innerHTML = '<div class="pvTitle">' + title + ' — Joy-Con横持ちイメージ</div>' +
+    '<div class="pvJoy"><svg viewBox="0 0 300 116">' +
+      '<rect x="5" y="18" width="290" height="80" rx="40" fill="none" stroke="currentColor" stroke-width="2.5"/>' +
+      '<circle cx="58" cy="58" r="17" fill="none" stroke="currentColor" stroke-width="2.5"/><circle cx="58" cy="58" r="7" fill="currentColor" opacity="0.4"/>' +
+      '<text x="58" y="12" text-anchor="middle">' + bl(bindings.hard) + '<tspan class="sub" x="58" dy="0"></tspan></text>' +
+      '<text x="58" y="112" text-anchor="middle">' + bl(bindings.down) + '</text>' +
+      '<text x="12" y="62">' + bl(bindings.left) + '</text>' +
+      '<text x="88" y="62">' + bl(bindings.right) + '</text>' +
+      '<circle cx="238" cy="34" r="9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="262" cy="58" r="9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="238" cy="82" r="9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="214" cy="58" r="9" fill="none" stroke="currentColor" stroke-width="2"/>' +
+      '<text x="238" y="14" text-anchor="middle">' + bl(bindings.hold) + '</text>' +
+      '<text x="283" y="62">' + bl(bindings.rotR) + '</text>' +
+      '<text x="238" y="108" text-anchor="middle">' + bl(bindings.rotL) + '</text>' +
+      '<text x="58" y="40" text-anchor="middle" class="sub">スティック側</text>' +
+      '<text x="238" y="62" text-anchor="middle" class="sub"></text>' +
+    '</svg></div>' +
+    '<p class="padNote" style="margin-top:8px">左手＝スティック側（移動とハードドロップ）、右手＝ボタン側（回転とホールド）。キーの文字は現在の割り当てです。</p>';
+    return;
+  }
+  el.innerHTML = '<div class="pvTitle">' + title + ' — キー配置イメージ</div>' +
+    '<div class="pvClusters">' +
+      '<div class="pvCluster"><div class="clLab">移動クラスタ</div>' +
+        '<div class="pvRow">' + capBig("hard", true) + '</div>' +
+        '<div class="pvRow">' + capBig("left") + capBig("down") + capBig("right") + '</div>' +
+      '</div>' +
+      '<div class="pvCluster"><div class="clLab">回転・ホールド</div>' +
+        '<div class="pvRow">' + capBig("rotL") + capBig("rotR") + capBig("rot180") + '</div>' +
+        '<div class="pvRow">' + capBig("hold") + capBig("pause") + capBig("restart") + '</div>' +
+      '</div>' +
+    '</div>' +
+    '<p class="padNote" style="margin-top:4px">表示は現在の割り当てに連動します。下のキー設定で変更すると、ここも変わります。</p>';
+}
+
 function renderPresetList(){
   ["presetList", "startPresetList"].forEach(function(id){
     var wrap = document.getElementById(id);
@@ -188,7 +238,7 @@ function renderPresetList(){
       b.type = "button";
       b.className = "presetCard" + (activePreset === name ? " active" : "");
       b.setAttribute("data-preset", name);
-      b.innerHTML = "<b>" + p.label + "</b><small>" + p.env + "</small><span>" + p.desc + "</span>";
+      b.innerHTML = '<span class="pIcon">' + presetIcon(name) + '</span><b>' + p.label + "</b><small>" + p.env + "</small><span>" + p.desc + "</span>";
       wrap.appendChild(b);
     });
   });
