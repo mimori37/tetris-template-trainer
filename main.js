@@ -272,6 +272,21 @@ function tryRotate(g, dir){
     }
   }
 }
+function tryRotate180(g){
+  if(!g.cur || g.paused || g.over || g.finished) return;
+  if(g.cur.type === "O") return;
+  var from = g.cur.rot, to = (from + 2) % 4;
+  var offs = [[0,0],[-1,0],[1,0],[0,1],[-2,0],[2,0],[-1,1],[1,1],[0,-1]];
+  for(var i=0;i<offs.length;i++){
+    var nx = g.cur.x + offs[i][0], ny = g.cur.y + offs[i][1];
+    if(!collide(g, g.cur.type, to, nx, ny)){
+      g.cur.x = nx; g.cur.y = ny; g.cur.rot = to;
+      g.lastRotate = true; g.lastKickIdx = 0;
+      onSuccessfulShift(g);
+      return;
+    }
+  }
+}
 function softStep(g){
   if(!g.cur) return false;
   if(!collide(g, g.cur.type, g.cur.rot, g.cur.x, g.cur.y+1)){
@@ -539,26 +554,43 @@ var ACTIONS = {
   hard:   { label: "ハードドロップ" },
   rotR:   { label: "右回転" },
   rotL:   { label: "左回転" },
+  rot180: { label: "180度回転" },
   hold:   { label: "ホールド" },
   pause:  { label: "一時停止" },
   restart:{ label: "リスタート" }
 };
 var KEY_GROUPS = [
   { title: "スティック側（左手）", note: "横持ちでは左手のスティック操作にあたる部分。ぷよテト横持ち風では A／D／S／W のダイヤモンドに割り当てます。", actions: ["left","right","down","hard"] },
-  { title: "ボタン側（右手）", note: "横持ちでは右手の4ボタン（ダイヤモンド配置）にあたる部分。ぷよテト横持ち風では →＝Aボタン位置（右回転）、↓＝Bボタン位置（左回転）、↑＝Xボタン位置（ホールド）です。", actions: ["rotR","rotL","hold"] },
+  { title: "ボタン側（右手）", note: "横持ちでは右手の4ボタン（ダイヤモンド配置）にあたる部分。ぷよテト横持ち風では →＝Aボタン位置（右回転）、↓＝Bボタン位置（左回転）、↑＝Xボタン位置（ホールド）です。", actions: ["rotR","rotL","rot180","hold"] },
   { title: "共通", note: "", actions: ["pause","restart"] }
 ];
 var PRESETS = {
   standard: {
-    label: "標準（ガイドライン風）",
-    bindings: { left:["ArrowLeft"], right:["ArrowRight"], down:["ArrowDown"], hard:["Space"], rotR:["ArrowUp","KeyX"], rotL:["KeyZ"], hold:["KeyC"], pause:["KeyP"], restart:["KeyR"] }
+    label: "標準",
+    env: "ガイドライン系",
+    desc: "公式系タイトルの基本配置。矢印＋Z/X回転、Spaceでハードドロップ。",
+    bindings: { left:["ArrowLeft"], right:["ArrowRight"], down:["ArrowDown"], hard:["Space"], rotR:["ArrowUp","KeyX"], rotL:["KeyZ"], rot180:[], hold:["KeyC"], pause:["KeyP"], restart:["KeyR"] }
+  },
+  tetrio: {
+    label: "TETR.IO",
+    env: "PCブラウザ対戦",
+    desc: "TETR.IOデフォルト。180回転＝A、ホールド＝Shift/C。回転は↑/XとZ。",
+    bindings: { left:["ArrowLeft"], right:["ArrowRight"], down:["ArrowDown"], hard:["Space"], rotR:["ArrowUp","KeyX"], rotL:["KeyZ"], rot180:["KeyA"], hold:["ShiftLeft","KeyC"], pause:["KeyP"], restart:["KeyR"] }
+  },
+  jstris: {
+    label: "Jstris",
+    env: "PCブラウザ対戦",
+    desc: "Jstrisデフォルト。180回転＝A、ホールド＝C、右回転は↑のみの潔い配置。",
+    bindings: { left:["ArrowLeft"], right:["ArrowRight"], down:["ArrowDown"], hard:["Space"], rotR:["ArrowUp"], rotL:["KeyZ"], rot180:["KeyA"], hold:["KeyC"], pause:["KeyP"], restart:["KeyR"] }
   },
   puyo: {
-    label: "ぷよテト横持ち風",
-    bindings: { left:["KeyA"], right:["KeyD"], down:["KeyS"], hard:["KeyW"], rotR:["ArrowRight"], rotL:["ArrowDown"], hold:["ArrowUp"], pause:["KeyP"], restart:["KeyR"] }
+    label: "ぷよテト横持ち",
+    env: "Switch / Joy-Con 1本",
+    desc: "Joy-Con横持ちの構えをキーボードへ。左手A/D/S/W＋右手は矢印ダイヤモンド。",
+    bindings: { left:["KeyA"], right:["KeyD"], down:["KeyS"], hard:["KeyW"], rotR:["ArrowRight"], rotL:["ArrowDown"], rot180:[], hold:["ArrowUp"], pause:["KeyP"], restart:["KeyR"] }
   }
 };
-var LS_KEY = "tetris-trainer-keybindings-v1";
+var LS_KEY = "tetris-trainer-keybindings-v2";
 function cloneBindings(b){
   var out = {};
   Object.keys(ACTIONS).forEach(function(a){ out[a] = (b[a] || []).slice(); });
@@ -570,7 +602,7 @@ function loadBindings(){
     if(raw){
       var parsed = JSON.parse(raw);
       if(parsed && parsed.bindings){
-        var ok = Object.keys(ACTIONS).every(function(a){ return Array.isArray(parsed.bindings[a]) && parsed.bindings[a].length > 0; });
+        var ok = Object.keys(ACTIONS).every(function(a){ return Array.isArray(parsed.bindings[a]) && (a === "rot180" || parsed.bindings[a].length > 0); });
         if(ok) return { bindings: cloneBindings(parsed.bindings), preset: parsed.preset || "custom" };
       }
     }
@@ -599,7 +631,8 @@ function actionForCode(code){
 function bindingsMatchPreset(name){
   var p = PRESETS[name].bindings;
   return Object.keys(ACTIONS).every(function(a){
-    return bindings[a].length === p[a].length && bindings[a].every(function(c, i){ return c === p[a][i]; });
+    var pa = p[a] || [];
+    return bindings[a].length === pa.length && bindings[a].every(function(c, i){ return c === pa[i]; });
   });
 }
 function keyNotice(msg){ var el = document.getElementById("keyNotice"); if(el) el.textContent = msg || ""; }
@@ -629,11 +662,9 @@ function renderKeyConfig(){
   var st = document.getElementById("presetState");
   if(st){
     if(activePreset === "custom") st.innerHTML = "現在の設定：<b>カスタム</b>（プリセットから変更済み）";
-    else st.innerHTML = "現在の設定：<b>" + PRESETS[activePreset].label + "</b>";
+    else st.innerHTML = "現在の設定：<b>" + (PRESETS[activePreset] ? PRESETS[activePreset].label : activePreset) + "</b>";
   }
-  var bs = document.getElementById("presetStandard"), bp = document.getElementById("presetPuyo");
-  if(bs) bs.classList.toggle("active", activePreset === "standard");
-  if(bp) bp.classList.toggle("active", activePreset === "puyo");
+  renderPresetList();
   renderKeysHelp();
 }
 function renderKeysHelp(){
@@ -648,6 +679,7 @@ function renderKeysHelp(){
       row("▼", "ソフトドロップ", "押している間、速く落ちる", caps("down")) +
       row("↻", "右回転", "", caps("rotR")) +
       row("↺", "左回転", "", caps("rotL")) +
+      (bindings.rot180.length ? row("⟳", "180度回転", "一気に裏返す（TETR.IO / Jstris系）", caps("rot180")) : "") +
       row("⇊", "ハードドロップ", "一気に落として固定", caps("hard")) +
       row("⇋", "ホールド", "今のピースをキープ／入れ替え", caps("hold")) +
       row("Ⅱ", "一時停止", "", caps("pause")) +
@@ -684,13 +716,33 @@ function assignKey(action, code){
   }
   bindings[action] = [code];
   capturingAction = null;
-  activePreset = bindingsMatchPreset("standard") ? "standard" : bindingsMatchPreset("puyo") ? "puyo" : "custom";
+  activePreset = "custom";
+  Object.keys(PRESETS).forEach(function(n){ if(bindingsMatchPreset(n)) activePreset = n; });
   saveBindings();
   keyNotice(msg || "「" + ACTIONS[action].label + "」に " + fmtCode(code) + " を割り当てました。");
   renderKeyConfig();
 }
-document.getElementById("presetStandard").addEventListener("click", function(){ applyPreset("standard"); });
-document.getElementById("presetPuyo").addEventListener("click", function(){ applyPreset("puyo"); });
+function renderPresetList(){
+  var wrap = document.getElementById("presetList");
+  if(!wrap) return;
+  wrap.innerHTML = "";
+  Object.keys(PRESETS).forEach(function(name){
+    var p = PRESETS[name];
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "presetCard" + (activePreset === name ? " active" : "");
+    b.setAttribute("data-preset", name);
+    b.innerHTML = "<b>" + p.label + "</b><small>" + p.env + "</small><span>" + p.desc + "</span>";
+    wrap.appendChild(b);
+  });
+}
+var presetListEl = document.getElementById("presetList");
+if(presetListEl){
+  presetListEl.addEventListener("click", function(e){
+    var b = e.target.closest("[data-preset]");
+    if(b) applyPreset(b.getAttribute("data-preset"));
+  });
+}
 function helpLine(){
   function f(a){ return bindings[a].map(fmtCode).join("/"); }
   return "ガイドライン準拠のエンドレスモードです。<br>" + f("left") + f("right") + " 移動 / " + f("rotR") + " 回転 / " + f("hard") + " ハードドロップ / " + f("hold") + " ホールド<br>盤面の上にも主なキーを出しています。割り当て変更は右の「キー設定」から。";
@@ -711,7 +763,7 @@ document.addEventListener("keydown", function(e){
   }
   var act = actionForCode(e.code);
   if(!act) return;
-  if(["left","right","down","rotR","rotL","hard"].indexOf(act) >= 0) e.preventDefault();
+  if(["left","right","down","rotR","rotL","rot180","hard"].indexOf(act) >= 0) e.preventDefault();
   if(e.repeat){ return; }
   switch(act){
     case "left": keyState.left = true; dasDir = -1; dasStart = performance.now(); dasCharged = false; if(G) tryMove(G,-1); break;
@@ -719,6 +771,7 @@ document.addEventListener("keydown", function(e){
     case "down": keyState.down = true; break;
     case "rotR": if(G) tryRotate(G, 1); drawAll(); break;
     case "rotL": if(G) tryRotate(G, -1); drawAll(); break;
+    case "rot180": if(G){ tryRotate180(G); drawAll(); } break;
     case "hard": if(G){ hardDrop(G); drawAll(); } break;
     case "hold": if(G){ doHold(G); drawAll(); } break;
     case "pause": togglePause(); break;
