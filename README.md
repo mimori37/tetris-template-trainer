@@ -22,3 +22,10 @@
 - キー設定：プリセット（標準／ぷよテト横持ち風）＋カスタム割り当て（ブラウザに保存）
 - コントローラー：Gamepad APIでJoy-Con / Proコンに対応（両手持ち・Joy-Con1本の横持ちモード）
 - 本作品は非公式の個人作品です。「テトリス」は The Tetris Company の商標です
+
+## 開発・運用
+
+- 正本：このGitHubリポジトリ（mimori37/tetris-template-trainer）。`main` への push で GitHub Pages に自動デプロイ
+- 公開URL：https://mimori37.github.io/tetris-template-trainer/
+- 編集は Muse（ねいろ）が担当し、VM上の作業コピーから commit / push する
+- Mac の `~/workspace/mywork/tetris-template-trainer/` は閲覧用コピー（git clone ではなくファイル同期）。手元で触る場合はこのリポジトリを clone し直すのが綺麗
