@@ -22,15 +22,8 @@ git clone https://github.com/mimori37/tetris-template-trainer.git
 
 ## 構成
 
-| パス | 内容 |
-|---|---|
-| `index.html` | 画面の骨格 |
-| `src/css/style.css` | テーマ（ライト / ダーク）と全スタイル |
-| `src/js/data.js` | 定数とテンプレ定義 |
-| `src/js/engine.js` | ゲーム本体と描画 |
-| `src/js/input.js` | キー設定・ゲームパッド |
-| `src/js/app.js` | 画面・判定・AI・引き継ぎ |
-| `src/js/qrcode.js` | QR生成ライブラリ（MIT、Kazuhiko Arase） |
+- `index.html` — 画面の骨格
+- `src/` — コード一式。ファイルの役割と依存関係は [src/README.md](src/README.md)
 
 ## 開発について
 
